@@ -2,17 +2,20 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useCart } from "../context/CartContext";
+import { WHATSAPP_NUMBER } from "../lib/constants";
 
 const navLinks = [
   { href: "#inicio", label: "Inicio" },
   { href: "#catalogo", label: "Catálogo" },
   { href: "#personalizar", label: "Crea tu propio ramo" },
-  { href: "#nosotros", label: "Nosotros" },
+  /*{ href: "#nosotros", label: "Nosotros" },*/
 ];
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { totalCount, openCart } = useCart();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -31,7 +34,7 @@ export default function Header() {
 
   return (
     <header
-      className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+      className="fixed top-0 left-0 right-0 z-40 transition-all duration-300"
       style={{
         background: isScrolled
           ? "rgba(255, 255, 255, 0.97)"
@@ -47,7 +50,7 @@ export default function Header() {
           href="#inicio"
           onClick={(e) => handleNavClick(e, "#inicio")}
           className="flex items-center group"
-          aria-label="LAOBRA — Ir al inicio"
+          aria-label="LA OBRA — Ir al inicio"
         >
           <span
             className="text-2xl tracking-[0.25em] font-light transition-opacity duration-300 group-hover:opacity-70"
@@ -57,7 +60,7 @@ export default function Header() {
               letterSpacing: "0.3em",
             }}
           >
-            LAOBRA
+            LA OBRA
           </span>
         </Link>
 
@@ -84,53 +87,72 @@ export default function Header() {
           ))}
         </ul>
 
-        {/* WhatsApp CTA */}
-        <a
-          href="https://wa.me/51919487505?text=Hola%20LAOBRA%2C%20me%20gustar%C3%ADa%20hacer%20un%20pedido"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hidden md:flex items-center gap-2 px-5 py-2.5 text-xs tracking-widest uppercase transition-all duration-300 hover:opacity-85 active:scale-95"
-          style={{
-            background: "#000000",
-            color: "#FFFFFF",
-            letterSpacing: "0.12em",
-            fontWeight: 400,
-          }}
-          aria-label="Contactar por WhatsApp"
-        >
-          <WhatsAppIcon />
-          WhatsApp
-        </a>
+        {/* Right CTA Actions: Cart & WhatsApp */}
+        <div className="flex items-center gap-3 sm:gap-4">
+          {/* Cart Trigger Button */}
+          <button
+            onClick={openCart}
+            className="relative flex items-center gap-2 p-2.5 sm:px-4 sm:py-2 text-xs tracking-widest uppercase border border-black/20 hover:border-black transition-all duration-300 hover:bg-black hover:text-white group"
+            style={{ color: "#000000" }}
+            aria-label={`Ver carrito con ${totalCount} productos`}
+          >
+            <CartIcon />
+            <span className="hidden sm:inline font-medium">Carrito</span>
+            {totalCount > 0 && (
+              <span className="flex items-center justify-center min-w-5 h-5 px-1.5 text-[10px] font-bold rounded-full bg-black text-white group-hover:bg-white group-hover:text-black transition-colors">
+                {totalCount}
+              </span>
+            )}
+          </button>
 
-        {/* Mobile Menu Button */}
-        <button
-          className="md:hidden flex flex-col gap-1.5 p-2 transition-all duration-300"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
-          aria-expanded={menuOpen}
-        >
-          <span
-            className="block w-6 h-0.5 transition-all duration-300 origin-center"
+          {/* WhatsApp CTA (Desktop) */}
+          <a
+            href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hola%20LAOBRA%2C%20me%20gustar%C3%ADa%20hacer%20un%20pedido`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden md:flex items-center gap-2 px-5 py-2.5 text-xs tracking-widest uppercase transition-all duration-300 hover:opacity-85 active:scale-95"
             style={{
               background: "#000000",
-              transform: menuOpen ? "rotate(45deg) translate(3px, 3px)" : "none",
+              color: "#FFFFFF",
+              letterSpacing: "0.12em",
+              fontWeight: 400,
             }}
-          />
-          <span
-            className="block w-6 h-0.5 transition-all duration-300"
-            style={{
-              background: "#000000",
-              opacity: menuOpen ? 0 : 1,
-            }}
-          />
-          <span
-            className="block w-6 h-0.5 transition-all duration-300 origin-center"
-            style={{
-              background: "#000000",
-              transform: menuOpen ? "rotate(-45deg) translate(3px, -3px)" : "none",
-            }}
-          />
-        </button>
+            aria-label="Contactar por WhatsApp"
+          >
+            <WhatsAppIcon />
+            WhatsApp
+          </a>
+
+          {/* Mobile Menu Button */}
+          <button
+            className="md:hidden flex flex-col gap-1.5 p-2 transition-all duration-300"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
+            aria-expanded={menuOpen}
+          >
+            <span
+              className="block w-6 h-0.5 transition-all duration-300 origin-center"
+              style={{
+                background: "#000000",
+                transform: menuOpen ? "rotate(45deg) translate(3px, 3px)" : "none",
+              }}
+            />
+            <span
+              className="block w-6 h-0.5 transition-all duration-300"
+              style={{
+                background: "#000000",
+                opacity: menuOpen ? 0 : 1,
+              }}
+            />
+            <span
+              className="block w-6 h-0.5 transition-all duration-300 origin-center"
+              style={{
+                background: "#000000",
+                transform: menuOpen ? "rotate(-45deg) translate(3px, -3px)" : "none",
+              }}
+            />
+          </button>
+        </div>
       </nav>
 
       {/* Mobile Menu Overlay */}
@@ -142,7 +164,7 @@ export default function Header() {
           backdropFilter: "blur(20px)",
         }}
       >
-        <ul className="px-8 py-6 flex flex-col gap-6 border-t" style={{ borderColor: "#F3E2CE" }}>
+        <ul className="px-8 py-6 flex flex-col gap-5 border-t" style={{ borderColor: "#F3E2CE" }}>
           {navLinks.map((link) => (
             <li key={link.href}>
               <a
@@ -155,17 +177,32 @@ export default function Header() {
               </a>
             </li>
           ))}
-          <li>
+          <li className="pt-2 flex flex-col gap-3">
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                openCart();
+              }}
+              className="w-full flex items-center justify-between py-3 px-4 text-xs tracking-widest uppercase border border-black bg-white text-black"
+            >
+              <div className="flex items-center gap-2">
+                <CartIcon />
+                <span>Ver Carrito</span>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-black text-white text-[10px]">
+                {totalCount}
+              </span>
+            </button>
+
             <a
-              href="https://wa.me/51919487505?text=Hola%20LAOBRA%2C%20me%20gustar%C3%ADa%20hacer%20un%20pedido"
+              href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hola%20LAOBRA%2C%20me%20gustar%C3%ADa%20hacer%20un%20pedido`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm tracking-widest uppercase"
-              style={{ color: "#000000", fontWeight: 400 }}
+              className="flex items-center justify-center gap-2 py-3 px-4 text-xs tracking-widest uppercase bg-black text-white"
               aria-label="Contactar por WhatsApp"
             >
-              <WhatsAppIcon color="#000000" />
-              WhatsApp
+              <WhatsAppIcon color="#FFFFFF" />
+              WhatsApp Directo
             </a>
           </li>
         </ul>
@@ -174,12 +211,33 @@ export default function Header() {
   );
 }
 
+function CartIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="17"
+      height="17"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <path d="M16 10a4 4 0 0 1-8 0" />
+    </svg>
+  );
+}
+
 function WhatsAppIcon({ color = "currentColor" }: { color?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
+      width="15"
+      height="15"
       viewBox="0 0 24 24"
       fill={color}
       aria-hidden="true"

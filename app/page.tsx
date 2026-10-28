@@ -1,7 +1,7 @@
 ﻿import Hero from "./components/Hero";
 import Catalog from "./components/Catalog";
 import CustomBouquet from "./components/CustomBouquet";
-import AboutUs from "./components/AboutUs";
+/*import AboutUs from "./components/AboutUs";*/
 import Benefits from "./components/Benefits";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -23,18 +23,9 @@ export default function Home() {
           <Hero />
         </section>
 
-        <section id="catalogo">
-          <Catalog />
-        </section>
-
-        <section id="personalizar">
-          <CustomBouquet />
-        </section>
-
-        <section id="nosotros">
-          <AboutUs />
-        </section>
-
+        <Catalog />
+        <CustomBouquet />
+        {/*<AboutUs />*/}
         <Benefits />
       </main>
 

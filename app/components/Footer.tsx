@@ -1,6 +1,7 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
+import { WHATSAPP_NUMBER, WHATSAPP_DISPLAY } from "../lib/constants";
 
 export default function Footer() {
   const [currentYear, setCurrentYear] = useState(2026);
@@ -11,11 +12,11 @@ export default function Footer() {
 
   const handleWhatsApp = () => {
     const message = encodeURIComponent(
-      "¡Hola, LAOBRA! 🌸 Quisiera más información."
+      "¡Hola, LA OBRA! 🤍💐 Quisiera más información."
     );
 
     window.open(
-      `https://wa.me/51919487505?text=${message}`,
+      `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`,
       "_blank",
       "noopener,noreferrer"
     );
@@ -47,9 +48,9 @@ export default function Footer() {
                 style={{
                   fontFamily: "Georgia, 'Times New Roman', serif",
                 }}
-                aria-label="LAOBRA, ir al inicio"
+                aria-label="LA OBRA, ir al inicio"
               >
-                LAOBRA
+                LA OBRA
               </a>
 
               <p
@@ -67,20 +68,30 @@ export default function Footer() {
 
             <div className="flex items-center gap-4">
               <a
-                href="https://www.instagram.com/laobra.flores/"
+                href="https://www.instagram.com/laobra.pe?utm_source=ig_web_button_share_sheet&xtok=ZDNlZDc0MzIxNw=="
                 target="_blank"
                 rel="noopener noreferrer"
                 className="transition-opacity hover:opacity-50"
-                aria-label="Seguir LAOBRA en Instagram"
+                aria-label="Seguir LA OBRA en Instagram"
               >
                 <InstagramIcon />
+              </a>
+
+              <a
+                href="https://www.tiktok.com/@laobra.pe?is_from_webapp=1&sender_device=pc"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-opacity hover:opacity-50"
+                aria-label="Seguir LA OBRA en TikTok"
+              >
+                <TiktokIcon />
               </a>
 
               <button
                 type="button"
                 onClick={handleWhatsApp}
                 className="transition-opacity hover:opacity-50"
-                aria-label="Contactar LAOBRA por WhatsApp"
+                aria-label="Contactar LA OBRA por WhatsApp"
               >
                 <WhatsAppIconSmall />
               </button>
@@ -141,29 +152,10 @@ export default function Footer() {
                   onClick={handleWhatsApp}
                   className="text-sm font-light transition-opacity hover:opacity-60"
                   style={{ color: "rgba(255,255,255,0.8)" }}
-                  aria-label="Contactar a LAOBRA por WhatsApp"
+                  aria-label="Contactar a LA OBRA por WhatsApp"
                 >
-                  +51 919 487 505
+                  {WHATSAPP_DISPLAY}
                 </button>
-              </li>
-
-              <li>
-                <p
-                  className="mb-1 text-xs font-light"
-                  style={{ color: "rgba(255,255,255,0.4)" }}
-                >
-                  Instagram
-                </p>
-
-                <a
-                  href="https://www.instagram.com/laobra.flores/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-light transition-opacity hover:opacity-60"
-                  style={{ color: "rgba(255,255,255,0.8)" }}
-                >
-                  @laobra.flores
-                </a>
               </li>
 
               <li>
@@ -206,7 +198,7 @@ export default function Footer() {
             className="text-center text-xs font-light sm:text-left"
             style={{ color: "rgba(255,255,255,0.3)" }}
           >
-            © {currentYear} LAOBRA. Todos los derechos reservados.
+            © {currentYear} LA OBRA. Todos los derechos reservados.
           </p>
 
           <p
@@ -256,3 +248,19 @@ function WhatsAppIconSmall() {
     </svg>
   );
 }
+
+function TiktokIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="rgba(255,255,255,0.7)"
+      aria-hidden="true"
+    >
+      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.46 6.3 6.3 0 0 0 1.88-4.46V8.62a8.28 8.28 0 0 0 4.89 1.58V6.75c-.34-.02-.67-.04-1-.06z" />
+    </svg>
+  );
+}
+

@@ -1,15 +1,17 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import "./globals.css";
+import { CartProvider } from "./context/CartContext";
+import CartDrawer from "./components/CartDrawer";
 
 export const metadata: Metadata = {
-  title: "LAOBRA | Flores que hablan por ti",
+  title: "LA OBRA | Flores que hablan por ti",
   description:
-    "Descubre arreglos florales artesanales en Lima. Regala flores, expresa tus sentimientos y crea un ramo personalizado con LAOBRA.",
-  applicationName: "LAOBRA",
+    "Descubre arreglos florales artesanales en Lima. Regala flores, expresa tus sentimientos y crea un ramo personalizado con LA OBRA.",
+  applicationName: "LA OBRA",
   openGraph: {
-    title: "LAOBRA | Flores que hablan por ti",
+    title: "LA OBRA | Flores que hablan por ti",
     description:
-      "Flores artesanales para expresar lo que sientes. Descubre el catálogo de LAOBRA en Lima.",
+      "Flores artesanales para expresar lo que sientes. Descubre el catálogo de LA OBRA en Lima.",
     locale: "es_PE",
     type: "website",
   },
@@ -21,8 +23,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es-PE">
-      <body>{children}</body>
+    <html lang="es" data-scroll-behavior="smooth">
+      <body>
+        <CartProvider>
+          {children}
+          <CartDrawer />
+        </CartProvider>
+      </body>
     </html>
   );
 }

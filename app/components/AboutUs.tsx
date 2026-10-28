@@ -15,7 +15,7 @@ export default function AboutUs() {
             <div className="col-span-2 relative aspect-[16/9] overflow-hidden" style={{ background: "#F3E2CE" }}>
               <Image
                 src="https://images.unsplash.com/photo-1508610048659-a06b669e3321?w=800&q=80&auto=format&fit=crop"
-                alt="Interior del taller floral de LAOBRA con flores frescas"
+                alt="Interior del taller floral de LA OBRA con flores frescas"
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 style={{ objectFit: "cover" }}
@@ -35,7 +35,7 @@ export default function AboutUs() {
             <div className="relative aspect-square overflow-hidden" style={{ background: "#FAF3EC" }}>
               <Image
                 src="https://images.unsplash.com/photo-1548533416-6b88b81c4248?w=400&q=80&auto=format&fit=crop"
-                alt="Ramos listos para entrega en LAOBRA"
+                alt="Ramos listos para entrega en LA OBRA"
                 fill
                 sizes="25vw"
                 style={{ objectFit: "cover" }}
@@ -67,7 +67,7 @@ export default function AboutUs() {
 
             <div className="space-y-5 text-sm font-light leading-relaxed" style={{ color: "#3A3530" }}>
               <p>
-                En <strong style={{ color: "#000000", fontWeight: 500 }}>LAOBRA</strong> creemos
+                En <strong style={{ color: "#000000", fontWeight: 500 }}>LA OBRA</strong> creemos
                 que las flores son mucho más que un regalo: son un puente entre personas, un gesto que expresa
                 lo que las palabras a veces no logran decir.
               </p>

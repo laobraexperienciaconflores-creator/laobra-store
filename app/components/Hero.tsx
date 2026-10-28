@@ -4,7 +4,7 @@ export default function Hero() {
       <div className="mx-auto grid min-h-[620px] max-w-7xl items-center gap-10 px-6 pt-28 pb-16 md:px-12 lg:px-20">
         <div className="relative z-10 max-w-xl">
           <p className="mb-6 text-xs font-semibold uppercase tracking-[0.3em] text-black/60">
-            LAOBRA · El arte de regalar
+            LA OBRA · El arte de regalar
           </p>
 
           <h1 className="text-5xl font-light leading-[1.08] tracking-tight text-black sm:text-6xl lg:text-7xl">
@@ -44,11 +44,11 @@ export default function Hero() {
         <div className="relative mx-auto w-full max-w-lg">
           <div className="absolute -right-4 -top-4 h-full w-full border border-black/15 sm:-right-6 sm:-top-6" />
 
-          <div className="relative aspect-[4/5] overflow-hidden bg-[#E8D2BA]">
+          <div className="relative aspect-[3/4] sm:aspect-[2/3] overflow-hidden bg-[#E8D2BA]">
             <img
-              src="https://images.unsplash.com/photo-1520763185298-1b434c919102?auto=format&fit=crop&w=1200&q=85"
-              alt="Arreglo floral elegante con flores frescas"
-              className="h-full w-full object-cover"
+              src="/hero.jpg"
+              alt="Florista con ramos exclusivos de LA OBRA"
+              className="h-full w-full object-cover object-top"
               fetchPriority="high"
             />
 

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { WHATSAPP_NUMBER } from "../lib/constants";
 
 export default function CustomBouquet() {
   const steps = [
@@ -28,9 +29,9 @@ export default function CustomBouquet() {
 
   const handleWhatsApp = () => {
     const message = encodeURIComponent(
-      "Hola LAOBRA 🌸 Me gustaría crear mi propio ramo personalizado. ¿Pueden ayudarme?"
+      "Hola LA OBRA, me gustaría crear mi propio ramo personalizado. ¿Pueden ayudarme?"
     );
-    window.open(`https://wa.me/51919487505?text=${message}`, "_blank", "noopener,noreferrer");
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, "_blank", "noopener,noreferrer");
   };
 
   return (

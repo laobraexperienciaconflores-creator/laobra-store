@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LA OBRA — Tienda Online
 
-## Getting Started
+E-commerce de arreglos florales artesanales en Lima, construido con **Next.js 16**, **Supabase** y **Mercado Pago**.
 
-First, run the development server:
+---
+
+## Stack
+
+- **Framework**: Next.js 16 (App Router, Turbopack)
+- **Base de datos / Auth**: Supabase (PostgreSQL)
+- **Pagos**: Mercado Pago (Perú) — Yape/Plin + tarjeta
+- **Deploy**: Vercel
+- **Estilos**: Tailwind CSS v4
+
+---
+
+## Desarrollo local
 
 ```bash
+# 1. Instala dependencias
+npm install
+
+# 2. Copia el ejemplo de variables y complétalo
+cp .env.example .env.local
+
+# 3. Levanta el servidor de desarrollo
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Variables de entorno
 
-## Learn More
+Copia `.env.example` y completa cada valor. Las variables `NEXT_PUBLIC_*` son seguras para el cliente; las demás son solo servidor.
 
-To learn more about Next.js, take a look at the following resources:
+| Variable | Dónde obtenerla |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API |
+| `SUPABASE_SECRET_KEY` | Supabase → Project Settings → API → service_role |
+| `MERCADOPAGO_ACCESS_TOKEN` | [MP Developers](https://www.mercadopago.com.pe/settings/account/credentials) → Credenciales de producción |
+| `NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY` | Igual que el anterior |
+| `NEXT_PUBLIC_SITE_URL` | URL pública de tu Vercel (ej: `https://laobra.vercel.app`) |
+| `MERCADOPAGO_WEBHOOK_URL` | `${NEXT_PUBLIC_SITE_URL}/api/mercadopago/webhook` |
+| `ADMIN_EMAIL` | Email del administrador |
+| `NEXT_PUBLIC_WHATSAPP_NUMBER` | Número de WhatsApp con código de país, sin `+` (ej: `51988559304`) |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deploy en Vercel
 
-## Deploy on Vercel
+1. Conecta el repositorio en [vercel.com/new](https://vercel.com/new)
+2. En **Environment Variables**, agrega todas las variables del archivo `.env.example`
+3. Vercel detectará automáticamente Next.js y usará `npm run build`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Configurar webhook de Mercado Pago
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Después del primer deploy, ve a [MP Developers → Webhooks](https://www.mercadopago.com.pe/developers/panel/app) y registra:
+
+```
+https://TU-DOMINIO.vercel.app/api/mercadopago/webhook
+```
+
+Eventos a suscribir: `payment`
+
+---
+
+## Comandos útiles
+
+```bash
+npm run dev      # Desarrollo con hot-reload
+npm run build    # Build de producción (verifica errores TS)
+npm run start    # Inicia el servidor de producción local
+npm run lint     # Linter ESLint
+```
+

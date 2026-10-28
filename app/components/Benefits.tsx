@@ -1,5 +1,7 @@
 "use client";
 
+import { WHATSAPP_NUMBER } from "../lib/constants";
+
 const benefits = [
   {
     id: "atencion",
@@ -97,7 +99,7 @@ export default function Benefits() {
               color: "#000000",
             }}
           >
-            La experiencia LAOBRA
+            La experiencia LA OBRA
           </h2>
           <div
             className="mt-6 mx-auto h-px w-16"
@@ -179,7 +181,7 @@ export default function Benefits() {
             ¿Lista tu ocasión especial?
           </p>
           <a
-            href="https://wa.me/51919487505?text=Hola%20LAOBRA%2C%20quiero%20hacer%20un%20pedido"
+            href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hola%20LAOBRA%2C%20quiero%20hacer%20un%20pedido`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex-shrink-0 inline-flex items-center gap-3 px-8 py-4 text-sm tracking-widest uppercase transition-all duration-300 hover:gap-5 hover:opacity-90 active:scale-95"

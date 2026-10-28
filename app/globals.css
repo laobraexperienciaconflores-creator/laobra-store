@@ -4,7 +4,7 @@
   --background: #FFFFFF;
   --foreground: #000000;
 
-  /* LAOBRA Brand Palette */
+  /* LA OBRA Brand Palette */
   --color-beige: #F3E2CE;
   --color-beige-light: #FAF3EC;
   --color-beige-dark: #E8CEAD;
@@ -58,13 +58,16 @@ html {
 ::-webkit-scrollbar {
   width: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: var(--color-cream);
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--color-beige-dark);
   border-radius: 3px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-stone);
 }
