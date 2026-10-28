@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import { MercadoPagoConfig, Payment } from "mercadopago";
 import { createClient } from "@supabase/supabase-js";
@@ -70,8 +71,8 @@ export async function POST(request: Request) {
       mpStatus === "approved"
         ? "confirmado"
         : mpStatus === "rejected" || mpStatus === "cancelled"
-        ? "cancelado"
-        : "pendiente";
+          ? "cancelado"
+          : "pendiente";
 
     // Actualizar en Supabase
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
