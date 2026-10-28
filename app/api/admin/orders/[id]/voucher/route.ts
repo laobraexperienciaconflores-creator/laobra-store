@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "../../../../../lib/supabaseServer";
 import { getSupabaseAdmin } from "../../../../../lib/supabaseAdmin";
+import { isAdminEmail } from "../../../../../lib/adminAuth";
 
 type RouteContext = {
     params: Promise<{ id: string }>;
@@ -15,14 +16,7 @@ export async function GET(
     const supabase = await createClient();
     const { data, error: authError } = await supabase.auth.getUser();
 
-    const allowedEmail = process.env.ADMIN_EMAIL?.toLowerCase();
-
-    if (
-        authError ||
-        !data.user ||
-        !allowedEmail ||
-        data.user.email?.toLowerCase() !== allowedEmail
-    ) {
+    if (authError || !data.user || !isAdminEmail(data.user.email)) {
         return NextResponse.json(
             { error: "No autorizado." },
             { status: 401 }

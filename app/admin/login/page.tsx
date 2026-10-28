@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabaseBrowser";
+import { isAdminEmail } from "../../lib/adminAuth";
 
 export default function AdminLoginPage() {
     const router = useRouter();
@@ -33,11 +34,7 @@ export default function AdminLoginPage() {
 
             const { data } = await supabase.auth.getUser();
 
-            if (
-                !data.user ||
-                data.user.email?.toLowerCase() !==
-                process.env.NEXT_PUBLIC_ADMIN_EMAIL?.toLowerCase()
-            ) {
+            if (!data.user || !isAdminEmail(data.user.email)) {
                 await supabase.auth.signOut();
                 setError("Este usuario no tiene acceso al panel.");
                 return;

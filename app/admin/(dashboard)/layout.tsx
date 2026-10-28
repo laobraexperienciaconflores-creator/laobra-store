@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { createClient } from "../../lib/supabaseServer";
+import { isAdminEmail } from "../../lib/adminAuth";
 
 async function AdminGuard({
     children,
@@ -14,14 +15,7 @@ async function AdminGuard({
     const supabase = await createClient();
     const { data, error } = await supabase.auth.getUser();
 
-    const allowedEmail = process.env.ADMIN_EMAIL?.toLowerCase();
-
-    if (
-        error ||
-        !data.user ||
-        !allowedEmail ||
-        data.user.email?.toLowerCase() !== allowedEmail
-    ) {
+    if (error || !data.user || !isAdminEmail(data.user.email)) {
         redirect("/admin/login");
     }
 
