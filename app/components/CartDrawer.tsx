@@ -236,8 +236,10 @@ export default function CartDrawer() {
     }
     message += "\n";
 
-    const invoiceUrl =
-      `${window.location.origin}/orders/${generatedPublicToken}`;
+    const baseUrl =
+      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+      window.location.origin;
+    const invoiceUrl = `${baseUrl}/orders/${generatedPublicToken}`;
 
     message += `🧾 Ver factura: ${invoiceUrl}\n\n`;
     message += `Enviado desde www.laobra.pe`;
