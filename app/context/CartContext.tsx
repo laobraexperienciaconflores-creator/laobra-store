@@ -10,6 +10,12 @@ export interface CartItem {
   quantity: number;
 }
 
+export interface Coupon {
+  code: string;
+  discountPercentage: number;
+  description: string;
+}
+
 export interface OrderDetails {
   buyerName: string;
   buyerPhone: string;
@@ -36,6 +42,14 @@ const initialOrderDetails: OrderDetails = {
   dedicationFrom: "",
 };
 
+export const AVAILABLE_COUPONS: Record<string, Coupon> = {
+  PRIMERRAMO15: {
+    code: "PRIMERRAMO15",
+    discountPercentage: 15,
+    description: "15% de descuento en tu primer ramo",
+  },
+};
+
 interface CartContextType {
   items: CartItem[];
   isOpen: boolean;
@@ -47,7 +61,12 @@ interface CartContextType {
   updateQuantity: (id: string, delta: number) => void;
   clearCart: () => void;
   totalCount: number;
+  subtotal: number;
   totalPrice: number;
+  discountAmount: number;
+  appliedCoupon: Coupon | null;
+  applyCoupon: (code: string) => { success: boolean; message: string };
+  removeCoupon: () => void;
   orderDetails: OrderDetails;
   updateOrderDetails: (fields: Partial<OrderDetails>) => void;
 }
@@ -56,11 +75,13 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 const CART_STORAGE_KEY = "laobra_cart_v2";
 const DETAILS_STORAGE_KEY = "laobra_order_details_v2";
+const COUPON_STORAGE_KEY = "laobra_coupon_v2";
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [orderDetails, setOrderDetails] = useState<OrderDetails>(initialOrderDetails);
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
 
   // Load from localStorage safely on mount
@@ -78,6 +99,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (savedDetails) {
         const parsedDetails = JSON.parse(savedDetails);
         setOrderDetails((prev) => ({ ...prev, ...parsedDetails }));
+      }
+
+      const savedCoupon = localStorage.getItem(COUPON_STORAGE_KEY);
+      if (savedCoupon) {
+        const parsedCoupon = JSON.parse(savedCoupon);
+        if (parsedCoupon?.code && AVAILABLE_COUPONS[parsedCoupon.code.toUpperCase()]) {
+          setAppliedCoupon(AVAILABLE_COUPONS[parsedCoupon.code.toUpperCase()]);
+        }
+      } else if (localStorage.getItem("laobra_discount_claimed") === "true") {
+        setAppliedCoupon(AVAILABLE_COUPONS["PRIMERRAMO15"]);
       }
     } catch {
       // Ignore storage errors
@@ -104,6 +135,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
       // Ignore storage errors
     }
   }, [orderDetails, isHydrated]);
+
+  // Save applied coupon to localStorage whenever changed
+  useEffect(() => {
+    if (!isHydrated) return;
+    try {
+      if (appliedCoupon) {
+        localStorage.setItem(COUPON_STORAGE_KEY, JSON.stringify(appliedCoupon));
+      } else {
+        localStorage.removeItem(COUPON_STORAGE_KEY);
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, [appliedCoupon, isHydrated]);
 
   const openCart = () => setIsOpen(true);
   const closeCart = () => setIsOpen(false);
@@ -150,8 +195,45 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setOrderDetails((prev) => ({ ...prev, ...fields }));
   };
 
+  const applyCoupon = (code: string) => {
+    const cleanCode = code.trim().toUpperCase();
+    const coupon = AVAILABLE_COUPONS[cleanCode];
+
+    if (coupon) {
+      setAppliedCoupon(coupon);
+      try {
+        localStorage.setItem("laobra_discount_claimed", "true");
+        localStorage.setItem(COUPON_STORAGE_KEY, JSON.stringify(coupon));
+      } catch {
+        // Ignore
+      }
+      return {
+        success: true,
+        message: `¡Descuento del ${coupon.discountPercentage}% aplicado con éxito!`,
+      };
+    }
+
+    return {
+      success: false,
+      message: "El código de cupón no es válido o ha expirado.",
+    };
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    try {
+      localStorage.removeItem(COUPON_STORAGE_KEY);
+    } catch {
+      // Ignore
+    }
+  };
+
   const totalCount = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const discountAmount = appliedCoupon
+    ? Math.round(((subtotal * appliedCoupon.discountPercentage) / 100) * 100) / 100
+    : 0;
+  const totalPrice = Math.max(0, subtotal - discountAmount);
 
   return (
     <CartContext.Provider
@@ -166,7 +248,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
         updateQuantity,
         clearCart,
         totalCount,
+        subtotal,
         totalPrice,
+        discountAmount,
+        appliedCoupon,
+        applyCoupon,
+        removeCoupon,
         orderDetails,
         updateOrderDetails,
       }}

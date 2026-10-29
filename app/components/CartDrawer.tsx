@@ -14,7 +14,12 @@ export default function CartDrawer() {
     updateQuantity,
     clearCart,
     totalCount,
+    subtotal,
     totalPrice,
+    discountAmount,
+    appliedCoupon,
+    applyCoupon,
+    removeCoupon,
     orderDetails,
     updateOrderDetails,
   } = useCart();
@@ -28,8 +33,19 @@ export default function CartDrawer() {
   const [voucherFileName, setVoucherFileName] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
   const [mpError, setMpError] = useState<string | null>(null);
+  const [couponInput, setCouponInput] = useState("");
+  const [couponMessage, setCouponMessage] = useState<{ success: boolean; text: string } | null>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleApplyCoupon = () => {
+    if (!couponInput.trim()) return;
+    const res = applyCoupon(couponInput);
+    setCouponMessage({ success: res.success, text: res.message });
+    if (res.success) {
+      setCouponInput("");
+    }
+  };
 
   // Lock body scroll and handle ESC key
   useEffect(() => {
@@ -53,6 +69,18 @@ export default function CartDrawer() {
     currency: "PEN",
     minimumFractionDigits: 0,
   }).format(totalPrice);
+
+  const formattedSubtotal = new Intl.NumberFormat("es-PE", {
+    style: "currency",
+    currency: "PEN",
+    minimumFractionDigits: 0,
+  }).format(subtotal);
+
+  const formattedDiscount = new Intl.NumberFormat("es-PE", {
+    style: "currency",
+    currency: "PEN",
+    minimumFractionDigits: 0,
+  }).format(discountAmount);
 
   const formatShortDate = (dateStr: string) => {
     if (!dateStr) return "";
@@ -175,7 +203,6 @@ export default function CartDrawer() {
     const fechaEntrega = orderDetails.deliveryDate ? `${shortDate} - ${hora}` : `A coordinar - ${hora}`;
 
     const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
-    const subtotal = totalPrice;
 
     // Encabezado estilo referencia
     let message = `*La Obra #${generatedOrderNumber}*\n\n`;
@@ -189,7 +216,10 @@ export default function CartDrawer() {
     // Totales
     message += `Total del artículo: S/ ${subtotal.toFixed(2)} (Cantidad: ${itemCount})\n`;
     message += `Subtotal: S/ ${subtotal.toFixed(2)}\n`;
-    message += `*Total: S/ ${subtotal.toFixed(2)}*\n`;
+    if (appliedCoupon && discountAmount > 0) {
+      message += `Descuento ${appliedCoupon.discountPercentage}% (${appliedCoupon.code}): -S/ ${discountAmount.toFixed(2)}\n`;
+    }
+    message += `*Total a pagar: S/ ${totalPrice.toFixed(2)}*\n`;
     message += "\n";
 
     // Cliente
@@ -841,9 +871,16 @@ export default function CartDrawer() {
                           <span className="w-2.5 h-2.5 rounded-full bg-[#00D4FF]" />
                           <span className="text-xs font-medium text-black">Plin</span>
                         </div>
-                        <span className="text-xs font-semibold text-black">
-                          {formattedTotal}
-                        </span>
+                        <div className="text-right">
+                          <span className="text-xs font-semibold text-black block">
+                            {formattedTotal}
+                          </span>
+                          {appliedCoupon && discountAmount > 0 && (
+                            <span className="text-[10px] text-[#4A6B53] font-medium block">
+                              15% desc. aplicado
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <div className="p-3 bg-white border border-[#E8CEAD] flex items-center justify-between">
@@ -1036,18 +1073,97 @@ export default function CartDrawer() {
           {/* Footer Checkout Area */}
           {items.length > 0 && (
             <div className="p-6 bg-[#FDF8F3] border-t border-[#F3E2CE] space-y-4">
+              {/* Sección de Cupón de Descuento */}
+              <div className="p-3 bg-white border border-[#E8CEAD] rounded-lg">
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🏷️</span>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-semibold text-black tracking-wider">
+                            {appliedCoupon.code}
+                          </span>
+                          <span className="text-[10px] px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded font-medium">
+                            -{appliedCoupon.discountPercentage}%
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-[#4A6B53]">
+                          Ahorras S/ {discountAmount.toFixed(2)} en tu primer ramo
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={removeCoupon}
+                      className="text-[11px] text-[#6B6560] hover:text-red-600 underline transition-colors"
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Código de descuento (ej. PRIMERRAMO15)"
+                        value={couponInput}
+                        onChange={(e) => {
+                          setCouponInput(e.target.value.toUpperCase());
+                          setCouponMessage(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleApplyCoupon();
+                          }
+                        }}
+                        className="flex-1 text-xs px-3 py-2 bg-[#FDF8F3] border border-[#E8CEAD] focus:outline-none focus:border-black uppercase font-mono tracking-wider text-black placeholder:text-[#6B6560]/60 placeholder:normal-case"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyCoupon}
+                        className="px-4 py-2 text-xs font-medium uppercase tracking-wider bg-black text-white hover:bg-black/85 transition-colors"
+                      >
+                        Aplicar
+                      </button>
+                    </div>
+                    {couponMessage && (
+                      <p
+                        className={`text-[11px] mt-1.5 ${
+                          couponMessage.success ? "text-[#4A6B53]" : "text-red-600"
+                        }`}
+                      >
+                        {couponMessage.text}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs text-[#6B6560]">
                   <span>Subtotal ({totalCount} {totalCount === 1 ? "arreglo" : "arreglos"})</span>
-                  <span>{formattedTotal}</span>
+                  <span>{formattedSubtotal}</span>
                 </div>
+
+                {appliedCoupon && discountAmount > 0 && (
+                  <div className="flex justify-between text-xs text-[#4A6B53] font-medium">
+                    <span className="flex items-center gap-1">
+                      <span>🏷️ Descuento ({appliedCoupon.discountPercentage}% primer ramo)</span>
+                    </span>
+                    <span>-{formattedDiscount}</span>
+                  </div>
+                )}
+
                 <div className="flex justify-between text-xs text-[#6B6560]">
                   <span>Envío en Lima (motorizado)</span>
                   <span className="italic">A coordinar por WhatsApp</span>
                 </div>
+
                 <div className="flex justify-between text-base font-light text-black pt-2 border-t border-[#F3E2CE]">
                   <span style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-                    Total estimado
+                    Total {appliedCoupon ? "con descuento" : "estimado"}
                   </span>
                   <span className="font-semibold text-lg">{formattedTotal}</span>
                 </div>

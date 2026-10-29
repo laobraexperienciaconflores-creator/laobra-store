@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { CartProvider } from "./context/CartContext";
 import CartDrawer from "./components/CartDrawer";
+import PromoModal from "./components/PromoModal";
+
 
 export const metadata: Metadata = {
   title: "LA OBRA | Flores que hablan por ti",
@@ -19,15 +21,17 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="es" data-scroll-behavior="smooth">
+    <html lang="es">
       <body>
         <CartProvider>
           {children}
           <CartDrawer />
+          {/* Ventana emergente de 15% de descuento al entrar y al intentar salir */}
+          <PromoModal />
         </CartProvider>
       </body>
     </html>

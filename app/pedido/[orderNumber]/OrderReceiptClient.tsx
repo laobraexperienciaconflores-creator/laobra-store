@@ -88,6 +88,26 @@ export default function OrderReceiptPage({
       }).format(order.total_amount)
     : "S/ 0.00";
 
+  const itemsSubtotal =
+    order?.items?.reduce(
+      (acc, item) => acc + Number(item.price) * item.quantity,
+      0
+    ) || 0;
+  const hasDiscount = order ? itemsSubtotal > order.total_amount + 0.01 : false;
+  const discountDifference = hasDiscount ? itemsSubtotal - (order?.total_amount || 0) : 0;
+
+  const formattedSubtotal = new Intl.NumberFormat("es-PE", {
+    style: "currency",
+    currency: "PEN",
+    minimumFractionDigits: 2,
+  }).format(itemsSubtotal || order?.total_amount || 0);
+
+  const formattedDiscount = new Intl.NumberFormat("es-PE", {
+    style: "currency",
+    currency: "PEN",
+    minimumFractionDigits: 2,
+  }).format(discountDifference);
+
   const totalItemsCount = order?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0;
 
   const getStatusBadge = () => {
@@ -247,10 +267,16 @@ export default function OrderReceiptPage({
               </div>
               <div className="flex justify-between text-[#6B6560]">
                 <span>Subtotal:</span>
-                <span>{formattedTotal}</span>
+                <span>{formattedSubtotal}</span>
               </div>
+              {hasDiscount && (
+                <div className="flex justify-between text-[#4A6B53] font-medium">
+                  <span>Descuento aplicado (15%):</span>
+                  <span>-{formattedDiscount}</span>
+                </div>
+              )}
               <div className="flex justify-between text-base font-semibold text-black pt-2 border-t border-[#F3E2CE]">
-                <span>Total:</span>
+                <span>Total pagado:</span>
                 <span>{formattedTotal}</span>
               </div>
             </div>
