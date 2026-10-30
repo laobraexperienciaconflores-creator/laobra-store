@@ -300,7 +300,30 @@ export default function OrderReceiptPage({
               </h4>
               <p><strong>Dirección:</strong> {order.delivery_address}</p>
               {order.delivery_reference && (
-                <p><strong>Referencia:</strong> {order.delivery_reference}</p>
+                <p>
+                  <strong>Referencia:</strong>{" "}
+                  {order.delivery_reference.includes("http") ? (
+                    <>
+                      {order.delivery_reference.split(/(https?:\/\/[^\s)]+)/g).map((part, i) =>
+                        part.startsWith("http") ? (
+                          <a
+                            key={i}
+                            href={part}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#B8924A] hover:underline inline-flex items-center gap-1 font-medium underline"
+                          >
+                            Ver ubicación en mapa ↗
+                          </a>
+                        ) : (
+                          <span key={i}>{part}</span>
+                        )
+                      )}
+                    </>
+                  ) : (
+                    order.delivery_reference
+                  )}
+                </p>
               )}
               <p>
                 <strong>Fecha de entrega:</strong>{" "}

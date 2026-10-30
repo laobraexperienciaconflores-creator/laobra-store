@@ -23,6 +23,7 @@ export interface OrderDetails {
   recipientPhone: string;
   deliveryAddress: string;
   deliveryReference: string;
+  deliveryLocationUrl?: string;
   deliveryDate: string;
   deliveryTime: string;
   dedication: string;
@@ -36,6 +37,7 @@ const initialOrderDetails: OrderDetails = {
   recipientPhone: "",
   deliveryAddress: "",
   deliveryReference: "",
+  deliveryLocationUrl: "",
   deliveryDate: "",
   deliveryTime: "10:00 AM",
   dedication: "",

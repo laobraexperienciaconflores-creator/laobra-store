@@ -150,6 +150,15 @@ export async function POST(request: Request) {
           ? "comprobante_enviado"
           : "pendiente_verificacion";
 
+    const rawRef = orderDetails.deliveryReference?.trim() || "";
+    const locUrl = orderDetails.deliveryLocationUrl?.trim() || "";
+    const fullReference =
+      rawRef && locUrl
+        ? `${rawRef} • Ubicación: ${locUrl}`
+        : locUrl
+        ? `Ubicación: ${locUrl}`
+        : rawRef || null;
+
     const { data, error } = await supabase
       .from("orders")
       .insert([
@@ -161,8 +170,7 @@ export async function POST(request: Request) {
           recipient_name: orderDetails.recipientName.trim(),
           recipient_phone: orderDetails.recipientPhone?.trim() || null,
           delivery_address: orderDetails.deliveryAddress.trim(),
-          delivery_reference:
-            orderDetails.deliveryReference?.trim() || null,
+          delivery_reference: fullReference,
           delivery_date: orderDetails.deliveryDate || null,
           delivery_time: orderDetails.deliveryTime || "10:00 AM",
           dedication: orderDetails.dedication?.trim() || null,

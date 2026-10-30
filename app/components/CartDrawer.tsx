@@ -234,6 +234,9 @@ export default function CartDrawer() {
       message += `, ${orderDetails.deliveryReference.trim()}`;
     }
     message += "\n";
+    if (orderDetails.deliveryLocationUrl?.trim()) {
+      message += `└ Ubicación: ${orderDetails.deliveryLocationUrl.trim()}\n`;
+    }
     message += `└ Fecha: ${fechaEntrega}\n`;
 
     // Quien recibe
@@ -707,7 +710,7 @@ export default function CartDrawer() {
                     </label>
                     <input
                       type="text"
-                      placeholder="Ej. Av. Roca y Boloña 825, Miraflores"
+                      placeholder="Ej. Av. Canada, La Victoria"
                       value={orderDetails.deliveryAddress}
                       onChange={(e) => updateOrderDetails({ deliveryAddress: e.target.value })}
                       className="w-full text-xs px-3 py-2 border border-[#E8CEAD] focus:outline-none focus:border-black bg-white"
@@ -725,6 +728,22 @@ export default function CartDrawer() {
                       onChange={(e) => updateOrderDetails({ deliveryReference: e.target.value })}
                       className="w-full text-xs px-3 py-2 border border-[#E8CEAD] focus:outline-none focus:border-black bg-white"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] text-[#6B6560] uppercase mb-1">
+                      Link de ubicación en mapa <span className="text-[10px] text-[#6B6560]/70 lowercase font-normal">(opcional)</span>
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="Ej. https://maps.app.goo.gl/... o link de Waze"
+                      value={orderDetails.deliveryLocationUrl || ""}
+                      onChange={(e) => updateOrderDetails({ deliveryLocationUrl: e.target.value })}
+                      className="w-full text-xs px-3 py-2 border border-[#E8CEAD] focus:outline-none focus:border-black bg-white placeholder:text-[#6B6560]/60"
+                    />
+                    <p className="text-[10px] text-[#6B6560] mt-1">
+                      📍 Puedes pegar el enlace de Google Maps o Waze para que el motorizado llegue más rápido y exacto.
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
@@ -1084,7 +1103,7 @@ export default function CartDrawer() {
                           <span className="text-xs font-semibold text-black tracking-wider">
                             {appliedCoupon.code}
                           </span>
-                          <span className="text-[10px] px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded font-medium">
+                          <span className="text-[10px] px-2 py-0.5 bg-[#FAF3EC] text-[#4A6B53] border border-[#E8CEAD] rounded font-medium">
                             -{appliedCoupon.discountPercentage}%
                           </span>
                         </div>
@@ -1130,9 +1149,8 @@ export default function CartDrawer() {
                     </div>
                     {couponMessage && (
                       <p
-                        className={`text-[11px] mt-1.5 ${
-                          couponMessage.success ? "text-[#4A6B53]" : "text-red-600"
-                        }`}
+                        className={`text-[11px] mt-1.5 ${couponMessage.success ? "text-[#4A6B53]" : "text-red-600"
+                          }`}
                       >
                         {couponMessage.text}
                       </p>
