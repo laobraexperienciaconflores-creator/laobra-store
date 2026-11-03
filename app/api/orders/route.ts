@@ -159,6 +159,13 @@ export async function POST(request: Request) {
         ? `Ubicación: ${locUrl}`
         : rawRef || null;
 
+    const district = orderDetails.deliveryDistrict?.trim() || "";
+    const rawAddress = orderDetails.deliveryAddress.trim();
+    const formattedAddress =
+      district && !rawAddress.toLowerCase().includes(district.toLowerCase())
+        ? `${district} — ${rawAddress}`
+        : rawAddress;
+
     const { data, error } = await supabase
       .from("orders")
       .insert([
@@ -169,7 +176,7 @@ export async function POST(request: Request) {
           buyer_phone: orderDetails.buyerPhone?.trim() || null,
           recipient_name: orderDetails.recipientName.trim(),
           recipient_phone: orderDetails.recipientPhone?.trim() || null,
-          delivery_address: orderDetails.deliveryAddress.trim(),
+          delivery_address: formattedAddress,
           delivery_reference: fullReference,
           delivery_date: orderDetails.deliveryDate || null,
           delivery_time: orderDetails.deliveryTime || "10:00 AM",

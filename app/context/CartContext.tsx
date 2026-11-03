@@ -1,6 +1,11 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import {
+  calculateDeliveryCost,
+  FREE_DELIVERY_THRESHOLD,
+  DEFAULT_DISTRICT,
+} from "../lib/delivery";
 
 export interface CartItem {
   id: string;
@@ -21,6 +26,7 @@ export interface OrderDetails {
   buyerPhone: string;
   recipientName: string;
   recipientPhone: string;
+  deliveryDistrict: string;
   deliveryAddress: string;
   deliveryReference: string;
   deliveryLocationUrl?: string;
@@ -35,6 +41,7 @@ const initialOrderDetails: OrderDetails = {
   buyerPhone: "",
   recipientName: "",
   recipientPhone: "",
+  deliveryDistrict: DEFAULT_DISTRICT,
   deliveryAddress: "",
   deliveryReference: "",
   deliveryLocationUrl: "",
@@ -66,6 +73,10 @@ interface CartContextType {
   subtotal: number;
   totalPrice: number;
   discountAmount: number;
+  deliveryCost: number;
+  deliveryBaseRate: number;
+  isFreeDelivery: boolean;
+  freeDeliveryThreshold: number;
   appliedCoupon: Coupon | null;
   applyCoupon: (code: string) => { success: boolean; message: string };
   removeCoupon: () => void;
@@ -235,7 +246,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const discountAmount = appliedCoupon
     ? Math.round(((subtotal * appliedCoupon.discountPercentage) / 100) * 100) / 100
     : 0;
-  const totalPrice = Math.max(0, subtotal - discountAmount);
+
+  const {
+    deliveryCost,
+    isFreeDelivery,
+    baseRate: deliveryBaseRate,
+  } = calculateDeliveryCost(subtotal, orderDetails.deliveryDistrict);
+
+  // El costo de envío se agrega al total a pagar cuando hay productos en el carrito
+  const totalPrice =
+    items.length > 0
+      ? Math.max(0, subtotal - discountAmount) + deliveryCost
+      : 0;
 
   return (
     <CartContext.Provider
@@ -253,6 +275,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         subtotal,
         totalPrice,
         discountAmount,
+        deliveryCost,
+        deliveryBaseRate,
+        isFreeDelivery,
+        freeDeliveryThreshold: FREE_DELIVERY_THRESHOLD,
         appliedCoupon,
         applyCoupon,
         removeCoupon,

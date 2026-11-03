@@ -4,6 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useCart } from "../context/CartContext";
 import { WHATSAPP_NUMBER } from "../lib/constants";
+import {
+  DELIVERY_ZONES,
+  DEFAULT_DISTRICT,
+  FREE_DELIVERY_THRESHOLD,
+} from "../lib/delivery";
 
 export default function CartDrawer() {
   const {
@@ -17,6 +22,10 @@ export default function CartDrawer() {
     subtotal,
     totalPrice,
     discountAmount,
+    deliveryCost,
+    deliveryBaseRate,
+    isFreeDelivery,
+    freeDeliveryThreshold,
     appliedCoupon,
     applyCoupon,
     removeCoupon,
@@ -82,6 +91,14 @@ export default function CartDrawer() {
     minimumFractionDigits: 0,
   }).format(discountAmount);
 
+  const formattedDelivery = isFreeDelivery
+    ? "¡GRATIS!"
+    : new Intl.NumberFormat("es-PE", {
+      style: "currency",
+      currency: "PEN",
+      minimumFractionDigits: 0,
+    }).format(deliveryCost);
+
   const formatShortDate = (dateStr: string) => {
     if (!dateStr) return "";
     try {
@@ -126,6 +143,11 @@ export default function CartDrawer() {
   };
 
   const validateDeliveryDetails = () => {
+    if (!orderDetails.deliveryDistrict?.trim()) {
+      setActiveTab("delivery");
+      setValidationError("Por favor, selecciona el distrito de entrega para calcular la tarifa de envío.");
+      return false;
+    }
     if (!orderDetails.deliveryAddress.trim()) {
       setActiveTab("delivery");
       setValidationError("Por favor, ingresa la dirección de entrega para el motorizado.");
@@ -219,6 +241,11 @@ export default function CartDrawer() {
     if (appliedCoupon && discountAmount > 0) {
       message += `Descuento ${appliedCoupon.discountPercentage}% (${appliedCoupon.code}): -S/ ${discountAmount.toFixed(2)}\n`;
     }
+    if (isFreeDelivery) {
+      message += `Envío (${orderDetails.deliveryDistrict || "Lima"}): GRATIS (Compras ≥ S/ 250)\n`;
+    } else {
+      message += `Envío (${orderDetails.deliveryDistrict || "Lima"}): S/ ${deliveryCost.toFixed(2)}\n`;
+    }
     message += `*Total a pagar: S/ ${totalPrice.toFixed(2)}*\n`;
     message += "\n";
 
@@ -229,7 +256,8 @@ export default function CartDrawer() {
 
     // Delivery / Entrega
     message += `Delivery: Entrega a domicilio\n`;
-    message += `└ ${orderDetails.deliveryAddress.trim()}`;
+    message += `└ Distrito: ${orderDetails.deliveryDistrict || "Lima"}\n`;
+    message += `└ Dirección: ${orderDetails.deliveryAddress.trim()}`;
     if (orderDetails.deliveryReference.trim()) {
       message += `, ${orderDetails.deliveryReference.trim()}`;
     }
@@ -237,6 +265,7 @@ export default function CartDrawer() {
     if (orderDetails.deliveryLocationUrl?.trim()) {
       message += `└ Ubicación: ${orderDetails.deliveryLocationUrl.trim()}\n`;
     }
+    message += `└ Tarifa de envío: ${isFreeDelivery ? "GRATIS" : `S/ ${deliveryCost.toFixed(2)}`}\n`;
     message += `└ Fecha: ${fechaEntrega}\n`;
 
     // Quien recibe
@@ -445,6 +474,40 @@ export default function CartDrawer() {
               >
                 <span>3. Pago</span>
               </button>
+            </div>
+          )}
+
+          {/* Banner / Barra de progreso de Envío Gratis */}
+          {items.length > 0 && (
+            <div className="px-6 py-2.5 bg-[#FAF3EC] border-b border-[#F3E2CE]">
+              {isFreeDelivery ? (
+                <div className="flex items-center justify-between text-xs text-[#4A6B53] font-medium">
+                  <span className="flex items-center gap-1.5">
+                    <span>✨</span>
+                    <span>¡Felicidades! Calificas para <strong>ENVÍO GRATIS</strong></span>
+                  </span>
+                  <span className="text-[10px] font-bold bg-[#4A6B53] text-white px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    S/ 0.00
+                  </span>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-[#6B6560]">
+                      🚚 Envío gratis en compras desde S/ {freeDeliveryThreshold}
+                    </span>
+                    <span className="font-semibold text-black">
+                      Faltan S/ {(freeDeliveryThreshold - subtotal).toFixed(0)}
+                    </span>
+                  </div>
+                  <div className="w-full bg-[#E8CEAD]/60 h-1.5 rounded-full overflow-hidden">
+                    <div
+                      className="bg-[#B8924A] h-full rounded-full transition-all duration-500 ease-out"
+                      style={{ width: `${Math.min(100, Math.max(8, (subtotal / freeDeliveryThreshold) * 100))}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -698,10 +761,51 @@ export default function CartDrawer() {
 
                 {/* Section 3: Entrega para el motorizado */}
                 <div className="p-4 bg-[#FDF8F3] border border-[#F3E2CE] space-y-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold uppercase tracking-wider text-black">
                       📍 Entrega (para el motorizado)
                     </span>
+                    {isFreeDelivery ? (
+                      <span className="text-[10px] bg-[#4A6B53] text-white px-2 py-0.5 rounded-full font-semibold">
+                        Envío GRATIS aplicado
+                      </span>
+                    ) : (
+                      <span className="text-[10px] bg-black text-[#F3E2CE] px-2 py-0.5 rounded-full font-medium">
+                        Envío: S/ {deliveryCost}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Selector de Distrito con rango tarifario */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[11px] text-[#6B6560] uppercase">
+                        Distrito de Lima / Callao <span className="text-red-500">*</span>
+                      </label>
+                      <span className="text-[10px] text-[#6B6560]">
+                        {isFreeDelivery ? "Tarifa: S/ 0 (Gratis)" : `Tarifa: S/ ${deliveryCost}`}
+                      </span>
+                    </div>
+                    <select
+                      value={orderDetails.deliveryDistrict || DEFAULT_DISTRICT}
+                      onChange={(e) => updateOrderDetails({ deliveryDistrict: e.target.value })}
+                      className="w-full text-xs px-3 py-2 border border-[#E8CEAD] focus:outline-none focus:border-black bg-white cursor-pointer"
+                    >
+                      {Object.values(DELIVERY_ZONES).map((zone) => (
+                        <optgroup key={zone.zoneId} label={`📍 ${zone.name}`}>
+                          {zone.districts.map((d) => (
+                            <option key={d} value={d}>
+                              {d} — {isFreeDelivery ? "Envío Gratis (≥ S/ 250)" : `S/ ${zone.rate}`}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                      <option value="Otro destino">Otro destino / Coordinar por WhatsApp (S/ 10)</option>
+                    </select>
+                    <p className="text-[10px] text-[#6B6560] mt-1">
+                      🛵 Salida desde Barranco · Zona 1 (S/ 10) · Zona 2 (S/ 20) · Zona 3 (S/ 30).{" "}
+                      <strong className="text-black">Envío gratis desde S/ {freeDeliveryThreshold}.</strong>
+                    </p>
                   </div>
 
                   <div>
@@ -710,7 +814,7 @@ export default function CartDrawer() {
                     </label>
                     <input
                       type="text"
-                      placeholder="Ej. Av. Canada, La Victoria"
+                      placeholder="Ej. Av. Canada 1234, Dpto 401"
                       value={orderDetails.deliveryAddress}
                       onChange={(e) => updateOrderDetails({ deliveryAddress: e.target.value })}
                       className="w-full text-xs px-3 py-2 border border-[#E8CEAD] focus:outline-none focus:border-black bg-white"
@@ -894,6 +998,11 @@ export default function CartDrawer() {
                           <span className="text-xs font-semibold text-black block">
                             {formattedTotal}
                           </span>
+                          <span className="text-[10px] text-[#6B6560] block">
+                            {isFreeDelivery
+                              ? "Envío gratis incluido"
+                              : `Incluye envío S/ ${deliveryCost} (${orderDetails.deliveryDistrict || "Lima"})`}
+                          </span>
                           {appliedCoupon && discountAmount > 0 && (
                             <span className="text-[10px] text-[#4A6B53] font-medium block">
                               15% desc. aplicado
@@ -925,7 +1034,9 @@ export default function CartDrawer() {
 
                         <p className="mt-1 text-sm text-gray-600">
                           Escanea el código QR con tu aplicación de pago y realiza el pago
-                          por el monto exacto de tu pedido.
+                          por el monto exacto de{" "}
+                          <strong className="text-black font-semibold">{formattedTotal}</strong>{" "}
+                          {isFreeDelivery ? "(con envío gratis incluido)" : `(incluye S/ ${deliveryCost} de envío)`}.
                         </p>
 
                         <div className="mx-auto mt-4 w-full max-w-[280px]">
@@ -1125,7 +1236,7 @@ export default function CartDrawer() {
                     <div className="flex gap-2">
                       <input
                         type="text"
-                        placeholder="Código de descuento (ej. LAOBRA01)"
+                        placeholder="Código de descuento"
                         value={couponInput}
                         onChange={(e) => {
                           setCouponInput(e.target.value.toUpperCase());
@@ -1175,13 +1286,19 @@ export default function CartDrawer() {
                 )}
 
                 <div className="flex justify-between text-xs text-[#6B6560]">
-                  <span>Envío en Lima (motorizado)</span>
-                  <span className="italic">A coordinar por WhatsApp</span>
+                  <span>Envío ({orderDetails.deliveryDistrict || "Lima"})</span>
+                  {isFreeDelivery ? (
+                    <span className="text-[#4A6B53] font-medium">
+                      ¡GRATIS! (Compras ≥ S/ {freeDeliveryThreshold})
+                    </span>
+                  ) : (
+                    <span className="text-black font-medium">{formattedDelivery}</span>
+                  )}
                 </div>
 
                 <div className="flex justify-between text-base font-light text-black pt-2 border-t border-[#F3E2CE]">
                   <span style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-                    Total {appliedCoupon ? "con descuento" : "estimado"}
+                    Total a pagar
                   </span>
                   <span className="font-semibold text-lg">{formattedTotal}</span>
                 </div>

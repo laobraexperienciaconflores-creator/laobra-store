@@ -271,10 +271,14 @@ export default function OrderReceiptPage({
               </div>
               {hasDiscount && (
                 <div className="flex justify-between text-[#4A6B53] font-medium">
-                  <span>Descuento aplicado (15%):</span>
+                  <span>Descuento aplicado:</span>
                   <span>-{formattedDiscount}</span>
                 </div>
               )}
+              <div className="flex justify-between text-[#6B6560]">
+                <span>Envío a domicilio:</span>
+                <span>{itemsSubtotal >= 250 ? "¡GRATIS! (Compras ≥ S/ 250)" : "Tarifa incluida en el pago"}</span>
+              </div>
               <div className="flex justify-between text-base font-semibold text-black pt-2 border-t border-[#F3E2CE]">
                 <span>Total pagado:</span>
                 <span>{formattedTotal}</span>
