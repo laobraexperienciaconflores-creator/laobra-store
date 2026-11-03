@@ -101,7 +101,7 @@ export default function ProductCard({
                 src={imgSrc}
                 alt={`${imageAlt} - Foto ${idx + 1}`}
                 fill
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
                 className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                 quality={85}
                 priority={idx === 0}
@@ -173,56 +173,9 @@ export default function ProductCard({
             </>
           )}
 
-          {/* Quick hover indicator */}
-          <div className="absolute inset-0 bg-black/15 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none z-10">
-            <span className="px-4 py-2 bg-white/95 text-black text-xs uppercase tracking-widest font-medium shadow-md">
-              Agregar al carrito
-            </span>
-          </div>
-        </div>
-
-        {/* Product Info */}
-        <div className="flex items-baseline justify-between gap-4 mb-2">
-          <h3
-            className="text-lg font-light tracking-wide transition-opacity duration-300 group-hover:opacity-70"
-            style={{
-              fontFamily: "Georgia, 'Times New Roman', serif",
-              color: "#000000",
-            }}
-          >
-            {name}
-          </h3>
-          <span
-            className="text-sm font-light flex-shrink-0"
-            style={{ color: "#6B6560" }}
-          >
-            {formattedPrice}
-          </span>
-        </div>
-
-        {description && (
-          <p
-            className="text-xs font-light leading-relaxed mb-3"
-            style={{ color: "#6B6560" }}
-          >
-            {description}
-          </p>
-        )}
-      </div>
-
-      {/* Action Buttons */}
-      <div className="mt-3 space-y-2">
-        <button
-          onClick={handleAddToCart}
-          className="w-full py-3.5 text-xs tracking-[0.2em] uppercase transition-all duration-300 flex items-center justify-center gap-2 font-medium"
-          style={{
-            background: isAdded ? "#4A6B53" : "#000000",
-            color: "#FFFFFF",
-          }}
-          aria-label={`Agregar ${name} al carrito`}
-        >
-          {isAdded ? (
-            <>
+          {/* Quick hover indicator - solo en desktop */}
+          <div className="hidden sm:flex absolute inset-0 bg-black/15 opacity-0 group-hover:opacity-100 transition-opacity duration-300 items-center justify-center pointer-events-none z-10">
+            <span className="px-4 py-2 bg-white/95 text-black text-xs uppercase tracking-widest font-medium shadow-md flex items-center gap-2">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="14"
@@ -230,24 +183,7 @@ export default function ProductCard({
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              <span>¡Agregado al carrito!</span>
-            </>
-          ) : (
-            <>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
+                strokeWidth="1.8"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
@@ -256,13 +192,95 @@ export default function ProductCard({
                 <path d="M16 10a4 4 0 0 1-8 0" />
               </svg>
               <span>Agregar al carrito</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Product Info */}
+        <div className="flex items-baseline justify-between gap-2 mb-1.5">
+          <h3
+            className="text-xs sm:text-base font-light tracking-wide transition-opacity duration-300 group-hover:opacity-70 leading-snug"
+            style={{
+              fontFamily: "Georgia, 'Times New Roman', serif",
+              color: "#000000",
+            }}
+          >
+            {name}
+          </h3>
+          <span
+            className="text-xs sm:text-sm font-medium flex-shrink-0"
+            style={{ color: "#000000" }}
+          >
+            {formattedPrice}
+          </span>
+        </div>
+
+        {description && (
+          <p
+            className="hidden sm:block text-xs font-light leading-relaxed mb-3"
+            style={{ color: "#6B6560" }}
+          >
+            {description}
+          </p>
+        )}
+      </div>
+
+      {/* Action Buttons */}
+      <div className="mt-2 sm:mt-3 space-y-1.5 sm:space-y-2">
+        <button
+          onClick={handleAddToCart}
+          className="w-full py-2.5 sm:py-3.5 text-[10px] sm:text-xs tracking-[0.15em] sm:tracking-[0.2em] uppercase transition-all duration-300 flex items-center justify-center gap-2 font-medium active:scale-[0.98]"
+          style={{
+            background: isAdded ? "#4A6B53" : "#000000",
+            color: "#FFFFFF",
+          }}
+          aria-label={`Agregar ${name} al carrito`}
+          title={isAdded ? "¡Agregado al carrito!" : "Agregar al carrito"}
+        >
+          {isAdded ? (
+            <>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span className="hidden sm:inline">¡Agregado al carrito!</span>
+            </>
+          ) : (
+            <>
+              {/* Ícono de carrito bien visible */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <path d="M16 10a4 4 0 0 1-8 0" />
+              </svg>
+              <span className="hidden sm:inline">Agregar al carrito</span>
             </>
           )}
         </button>
 
         <button
           onClick={handleWhatsApp}
-          className="w-full py-2 text-[11px] tracking-wider uppercase text-[#6B6560] hover:text-black transition-colors flex items-center justify-center gap-1.5"
+          className="hidden sm:flex w-full py-2 text-[11px] tracking-wider uppercase text-[#6B6560] hover:text-black transition-colors items-center justify-center gap-1.5"
         >
           <span>¿Consultas previas? Escríbenos</span>
         </button>

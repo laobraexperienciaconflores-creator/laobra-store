@@ -26,7 +26,7 @@ export default function Footer() {
     { href: "#inicio", label: "Inicio" },
     { href: "#catalogo", label: "Catálogo" },
     { href: "#personalizar", label: "Crea tu ramo" },
-    { href: "#nosotros", label: "Nosotros" },
+    /*{ href: "#nosotros", label: "Nosotros" },*/
   ];
 
   return (
@@ -62,7 +62,7 @@ export default function Footer() {
               >
                 Floristería artesanal en Lima.
                 <br />
-                Flores que hablan por ti.
+                Experiencias con flores.
               </p>
             </div>
 

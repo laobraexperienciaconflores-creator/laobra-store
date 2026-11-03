@@ -45,8 +45,8 @@ const initialOrderDetails: OrderDetails = {
 };
 
 export const AVAILABLE_COUPONS: Record<string, Coupon> = {
-  PRIMERRAMO15: {
-    code: "PRIMERRAMO15",
+  LAOBRA01: {
+    code: "LAOBRA01",
     discountPercentage: 15,
     description: "15% de descuento en tu primer ramo",
   },
@@ -110,7 +110,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           setAppliedCoupon(AVAILABLE_COUPONS[parsedCoupon.code.toUpperCase()]);
         }
       } else if (localStorage.getItem("laobra_discount_claimed") === "true") {
-        setAppliedCoupon(AVAILABLE_COUPONS["PRIMERRAMO15"]);
+        setAppliedCoupon(AVAILABLE_COUPONS["LAOBRA01"]);
       }
     } catch {
       // Ignore storage errors

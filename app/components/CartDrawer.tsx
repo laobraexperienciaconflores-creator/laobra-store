@@ -1125,7 +1125,7 @@ export default function CartDrawer() {
                     <div className="flex gap-2">
                       <input
                         type="text"
-                        placeholder="Código de descuento (ej. PRIMERRAMO15)"
+                        placeholder="Código de descuento (ej. LAOBRA01)"
                         value={couponInput}
                         onChange={(e) => {
                           setCouponInput(e.target.value.toUpperCase());

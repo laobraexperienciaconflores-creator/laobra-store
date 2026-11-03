@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 
-const COUPON_CODE = 'PRIMERRAMO15';
+const COUPON_CODE = 'LAOBRA01';
 const DISCOUNT_PERCENTAGE = '15%';
 
 export default function PromoModal() {
@@ -72,23 +72,6 @@ export default function PromoModal() {
 
   return (
     <>
-      {/* Botón flotante discreto alineado con la paleta si se cierra la ventana */}
-      {!isOpen && hasBeenShown && (
-        <button
-          onClick={() => {
-            setIsExitIntent(false);
-            setIsOpen(true);
-          }}
-          className="fixed bottom-6 left-6 z-40 bg-[#000000] hover:bg-[#1A1A1A] text-[#F3E2CE] text-[11px] font-medium tracking-[0.18em] uppercase py-2.5 px-4 rounded-full shadow-2xl border border-[#B8924A]/40 backdrop-blur-md flex items-center gap-2 hover:scale-105 transition-all animate-fadeIn"
-          title="Ver descuento del 15%"
-        >
-          <span className="text-[#B8924A] text-xs">✦</span>
-          <span>
-            {isAlreadyClaimed ? '15% OFF Activo en tu carrito' : '15% OFF en tu primer ramo'}
-          </span>
-        </button>
-      )}
-
       {/* Modal Principal */}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-sm animate-fadeIn">
@@ -124,7 +107,7 @@ export default function PromoModal() {
               {/* Tag / Badge */}
               <div className="mb-2.5">
                 <span className="inline-block px-3.5 py-1 bg-[#000000] text-[#F3E2CE] text-[10px] font-medium uppercase tracking-[0.25em] rounded-full shadow-sm">
-                  {isExitIntent ? '¡Espera un momento!' : 'Cortesía de Bienvenida'}
+                  {isExitIntent ? '¡Espera un momento!' : 'Regalo de Bienvenida'}
                 </span>
               </div>
 

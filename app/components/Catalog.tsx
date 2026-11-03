@@ -114,8 +114,8 @@ export default function Catalog() {
           aria-hidden="true"
         />
 
-        {/* Products Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-14">
+        {/* Products Grid — 2 cols mobile, 2 cols tablet, 3 cols desktop */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-10 sm:gap-x-8 sm:gap-y-14">
           {products.map((product) => (
             <ProductCard key={product.id} {...product} />
           ))}

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useCart } from "../context/CartContext";
 import { WHATSAPP_NUMBER } from "../lib/constants";
 
+const COUPON_CODE = 'LAOBRA01';
+
 const navLinks = [
   { href: "#inicio", label: "Inicio" },
   { href: "#catalogo", label: "Catálogo" },
@@ -15,7 +17,9 @@ const navLinks = [
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const { totalCount, openCart } = useCart();
+  const { totalCount, openCart, applyCoupon, appliedCoupon } = useCart();
+
+  const isAlreadyClaimed = Boolean(appliedCoupon && appliedCoupon.code === COUPON_CODE);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -35,125 +39,212 @@ export default function Header() {
   return (
     <header
       className="fixed top-0 left-0 right-0 z-40 transition-all duration-300"
-      style={{
-        background: isScrolled
-          ? "rgba(255, 255, 255, 0.97)"
-          : "rgba(243, 226, 206, 0.85)",
-        backdropFilter: "blur(12px)",
-        borderBottom: isScrolled ? "1px solid #F3E2CE" : "1px solid rgba(0,0,0,0.06)",
-        boxShadow: isScrolled ? "0 2px 20px rgba(0,0,0,0.05)" : "none",
-      }}
     >
-      <nav className="max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between h-20">
-        {/* Logo */}
-        <Link
-          href="#inicio"
-          onClick={(e) => handleNavClick(e, "#inicio")}
-          className="flex items-center group"
-          aria-label="LA OBRA — Ir al inicio"
-        >
-          <span
-            className="text-2xl tracking-[0.25em] font-light transition-opacity duration-300 group-hover:opacity-70"
-            style={{
-              fontFamily: "Georgia, 'Times New Roman', serif",
-              color: "#000000",
-              letterSpacing: "0.3em",
-            }}
-          >
-            LA OBRA
-          </span>
-        </Link>
+      {/* ── Announcement bar de descuento ── */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0.6rem',
+          background: '#000000',
+          color: '#F3E2CE',
+          padding: '0.45rem 1rem',
+          fontSize: '0.7rem',
+          fontWeight: 500,
+          letterSpacing: '0.16em',
+          textTransform: 'uppercase',
+          flexWrap: 'wrap',
+        }}
+      >
+        <span style={{ color: '#B8924A', flexShrink: 0 }}>✦</span>
 
-        {/* Desktop Navigation */}
-        <ul className="hidden md:flex items-center gap-10" role="navigation" aria-label="Navegación principal">
-          {navLinks.map((link) => (
-            <li key={link.href}>
-              <a
-                href={link.href}
-                onClick={(e) => handleNavClick(e, link.href)}
-                className="text-sm tracking-widest uppercase transition-all duration-300 hover:opacity-60 relative group"
-                style={{
-                  color: "#000000",
-                  fontWeight: 400,
-                  letterSpacing: "0.12em",
-                }}
-              >
-                {link.label}
-                <span
-                  className="absolute -bottom-1 left-0 w-0 h-px bg-current transition-all duration-300 group-hover:w-full"
-                />
-              </a>
-            </li>
-          ))}
-        </ul>
-
-        {/* Right CTA Actions: Cart & WhatsApp */}
-        <div className="flex items-center gap-3 sm:gap-4">
-          {/* Cart Trigger Button */}
-          <button
-            onClick={openCart}
-            className="relative flex items-center gap-2 p-2.5 sm:px-4 sm:py-2 text-xs tracking-widest uppercase border border-black/20 hover:border-black transition-all duration-300 hover:bg-black hover:text-white group"
-            style={{ color: "#000000" }}
-            aria-label={`Ver carrito con ${totalCount} productos`}
-          >
-            <CartIcon />
-            <span className="hidden sm:inline font-medium">Carrito</span>
-            {totalCount > 0 && (
-              <span className="flex items-center justify-center min-w-5 h-5 px-1.5 text-[10px] font-bold rounded-full bg-black text-white group-hover:bg-white group-hover:text-black transition-colors">
-                {totalCount}
+        <span style={{ lineHeight: 1.4 }}>
+          {isAlreadyClaimed ? (
+            <>
+              <span style={{ color: '#B8924A', fontWeight: 700 }}>15% OFF</span>{' '}
+              activo en tu carrito · Código{' '}
+              <span style={{ fontFamily: 'monospace', color: '#E8CEAD', letterSpacing: '0.2em' }}>
+                {COUPON_CODE}
               </span>
-            )}
-          </button>
+            </>
+          ) : (
+            <>
+              🌸{' '}
+              <span style={{ color: '#B8924A', fontWeight: 700 }}>15% OFF</span>{' '}
+              en tu primer ramo · Código{' '}
+              <span style={{ fontFamily: 'monospace', color: '#E8CEAD', letterSpacing: '0.2em' }}>
+                {COUPON_CODE}
+              </span>
+            </>
+          )}
+        </span>
 
-          {/* WhatsApp CTA (Desktop) */}
-          <a
-            href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hola%20LAOBRA%2C%20me%20gustar%C3%ADa%20hacer%20un%20pedido`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hidden md:flex items-center gap-2 px-5 py-2.5 text-xs tracking-widest uppercase transition-all duration-300 hover:opacity-85 active:scale-95"
+        {isAlreadyClaimed ? (
+          <span
             style={{
-              background: "#000000",
-              color: "#FFFFFF",
-              letterSpacing: "0.12em",
-              fontWeight: 400,
+              background: '#4A6B53',
+              color: '#fff',
+              borderRadius: '9999px',
+              padding: '0.15rem 0.65rem',
+              fontSize: '0.62rem',
+              letterSpacing: '0.12em',
+              flexShrink: 0,
             }}
-            aria-label="Contactar por WhatsApp"
           >
-            <WhatsAppIcon />
-            WhatsApp
-          </a>
-
-          {/* Mobile Menu Button */}
+            ✓ Aplicado
+          </span>
+        ) : (
           <button
-            className="md:hidden flex flex-col gap-1.5 p-2 transition-all duration-300"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
-            aria-expanded={menuOpen}
+            type="button"
+            onClick={() => applyCoupon(COUPON_CODE)}
+            style={{
+              background: '#B8924A',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '9999px',
+              padding: '0.2rem 0.75rem',
+              fontSize: '0.62rem',
+              fontWeight: 700,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              flexShrink: 0,
+              transition: 'background 0.2s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#9A7A3C')}
+            onMouseLeave={e => (e.currentTarget.style.background = '#B8924A')}
+          >
+            Aplicar
+          </button>
+        )}
+
+        <span style={{ color: '#B8924A', flexShrink: 0 }}>✦</span>
+      </div>
+
+      {/* ── Nav principal ── */}
+      <div
+        style={{
+          background: isScrolled
+            ? "rgba(255, 255, 255, 0.97)"
+            : "rgba(243, 226, 206, 0.85)",
+          backdropFilter: "blur(12px)",
+          borderBottom: isScrolled ? "1px solid #F3E2CE" : "1px solid rgba(0,0,0,0.06)",
+          boxShadow: isScrolled ? "0 2px 20px rgba(0,0,0,0.05)" : "none",
+          transition: "all 300ms",
+        }}
+      >
+        <nav className="max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link
+            href="#inicio"
+            onClick={(e) => handleNavClick(e, "#inicio")}
+            className="flex items-center group"
+            aria-label="LA OBRA — Ir al inicio"
           >
             <span
-              className="block w-6 h-0.5 transition-all duration-300 origin-center"
+              className="text-2xl tracking-[0.25em] font-light transition-opacity duration-300 group-hover:opacity-70"
+              style={{
+                fontFamily: "Georgia, 'Times New Roman', serif",
+                color: "#000000",
+                letterSpacing: "0.3em",
+              }}
+            >
+              LA OBRA
+            </span>
+          </Link>
+
+          {/* Desktop Navigation */}
+          <ul className="hidden md:flex items-center gap-10" role="navigation" aria-label="Navegación principal">
+            {navLinks.map((link) => (
+              <li key={link.href}>
+                <a
+                  href={link.href}
+                  onClick={(e) => handleNavClick(e, link.href)}
+                  className="text-sm tracking-widest uppercase transition-all duration-300 hover:opacity-60 relative group"
+                  style={{
+                    color: "#000000",
+                    fontWeight: 400,
+                    letterSpacing: "0.12em",
+                  }}
+                >
+                  {link.label}
+                  <span
+                    className="absolute -bottom-1 left-0 w-0 h-px bg-current transition-all duration-300 group-hover:w-full"
+                  />
+                </a>
+              </li>
+            ))}
+          </ul>
+
+          {/* Right CTA Actions: Cart & WhatsApp */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Cart Trigger Button */}
+            <button
+              onClick={openCart}
+              className="relative flex items-center gap-2 p-2.5 sm:px-4 sm:py-2 text-xs tracking-widest uppercase border border-black/20 hover:border-black transition-all duration-300 hover:bg-black hover:text-white group"
+              style={{ color: "#000000" }}
+              aria-label={`Ver carrito con ${totalCount} productos`}
+            >
+              <CartIcon />
+              <span className="hidden sm:inline font-medium">Carrito</span>
+              {totalCount > 0 && (
+                <span className="flex items-center justify-center min-w-5 h-5 px-1.5 text-[10px] font-bold rounded-full bg-black text-white group-hover:bg-white group-hover:text-black transition-colors">
+                  {totalCount}
+                </span>
+              )}
+            </button>
+
+            {/* WhatsApp CTA (Desktop) */}
+            <a
+              href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hola%20LAOBRA%2C%20me%20gustar%C3%ADa%20hacer%20un%20pedido`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden md:flex items-center gap-2 px-5 py-2.5 text-xs tracking-widest uppercase transition-all duration-300 hover:opacity-85 active:scale-95"
               style={{
                 background: "#000000",
-                transform: menuOpen ? "rotate(45deg) translate(3px, 3px)" : "none",
+                color: "#FFFFFF",
+                letterSpacing: "0.12em",
+                fontWeight: 400,
               }}
-            />
-            <span
-              className="block w-6 h-0.5 transition-all duration-300"
-              style={{
-                background: "#000000",
-                opacity: menuOpen ? 0 : 1,
-              }}
-            />
-            <span
-              className="block w-6 h-0.5 transition-all duration-300 origin-center"
-              style={{
-                background: "#000000",
-                transform: menuOpen ? "rotate(-45deg) translate(3px, -3px)" : "none",
-              }}
-            />
-          </button>
-        </div>
-      </nav>
+              aria-label="Contactar por WhatsApp"
+            >
+              <WhatsAppIcon />
+              WhatsApp
+            </a>
+
+            {/* Mobile Menu Button */}
+            <button
+              className="md:hidden flex flex-col gap-1.5 p-2 transition-all duration-300"
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
+              aria-expanded={menuOpen}
+            >
+              <span
+                className="block w-6 h-0.5 transition-all duration-300 origin-center"
+                style={{
+                  background: "#000000",
+                  transform: menuOpen ? "rotate(45deg) translate(3px, 3px)" : "none",
+                }}
+              />
+              <span
+                className="block w-6 h-0.5 transition-all duration-300"
+                style={{
+                  background: "#000000",
+                  opacity: menuOpen ? 0 : 1,
+                }}
+              />
+              <span
+                className="block w-6 h-0.5 transition-all duration-300 origin-center"
+                style={{
+                  background: "#000000",
+                  transform: menuOpen ? "rotate(-45deg) translate(3px, -3px)" : "none",
+                }}
+              />
+            </button>
+          </div>
+        </nav>
+      </div>
 
       {/* Mobile Menu Overlay */}
       <div
