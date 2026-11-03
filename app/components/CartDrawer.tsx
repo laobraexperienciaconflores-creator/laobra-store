@@ -803,7 +803,7 @@ export default function CartDrawer() {
                       <option value="Otro destino">Otro destino / Coordinar por WhatsApp (S/ 10)</option>
                     </select>
                     <p className="text-[10px] text-[#6B6560] mt-1">
-                      🛵 Salida desde Barranco · Zona 1 (S/ 10) · Zona 2 (S/ 20) · Zona 3 (S/ 30).{" "}
+                      🛵.{" "}
                       <strong className="text-black">Envío gratis desde S/ {freeDeliveryThreshold}.</strong>
                     </p>
                   </div>
