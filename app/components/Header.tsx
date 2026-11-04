@@ -17,7 +17,7 @@ const navLinks = [
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const { totalCount, openCart, applyCoupon, appliedCoupon } = useCart();
+  const { totalCount, openCart, applyCoupon, appliedCoupon, isFirstDiscountUsed } = useCart();
 
   const isAlreadyClaimed = Boolean(appliedCoupon && appliedCoupon.code === COUPON_CODE);
 
@@ -59,64 +59,73 @@ export default function Header() {
       >
         <span style={{ color: '#B8924A', flexShrink: 0 }}>✦</span>
 
-        <span style={{ lineHeight: 1.4 }}>
-          {isAlreadyClaimed ? (
-            <>
-              <span style={{ color: '#B8924A', fontWeight: 700 }}>15% OFF</span>{' '}
-              activo en tu carrito · Código{' '}
-              <span style={{ fontFamily: 'monospace', color: '#E8CEAD', letterSpacing: '0.2em' }}>
-                {COUPON_CODE}
-              </span>
-            </>
-          ) : (
-            <>
-              🌸{' '}
-              <span style={{ color: '#B8924A', fontWeight: 700 }}>15% OFF</span>{' '}
-              en tu primer ramo · Código{' '}
-              <span style={{ fontFamily: 'monospace', color: '#E8CEAD', letterSpacing: '0.2em' }}>
-                {COUPON_CODE}
-              </span>
-            </>
-          )}
-        </span>
-
-        {isAlreadyClaimed ? (
-          <span
-            style={{
-              background: '#4A6B53',
-              color: '#fff',
-              borderRadius: '9999px',
-              padding: '0.15rem 0.65rem',
-              fontSize: '0.62rem',
-              letterSpacing: '0.12em',
-              flexShrink: 0,
-            }}
-          >
-            ✓ Aplicado
+        {isFirstDiscountUsed ? (
+          <span style={{ lineHeight: 1.4 }}>
+            🌸 FLORES ARTESANALES DE AUTOR ·{' '}
+            <span style={{ color: '#B8924A', fontWeight: 700 }}>ENVÍOS A TODO LIMA</span> · DELIVERY GRATIS POR COMPRAS DESDE S/ 250
           </span>
         ) : (
-          <button
-            type="button"
-            onClick={() => applyCoupon(COUPON_CODE)}
-            style={{
-              background: '#B8924A',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '9999px',
-              padding: '0.2rem 0.75rem',
-              fontSize: '0.62rem',
-              fontWeight: 700,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              flexShrink: 0,
-              transition: 'background 0.2s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#9A7A3C')}
-            onMouseLeave={e => (e.currentTarget.style.background = '#B8924A')}
-          >
-            Aplicar
-          </button>
+          <>
+            <span style={{ lineHeight: 1.4 }}>
+              {isAlreadyClaimed ? (
+                <>
+                  <span style={{ color: '#B8924A', fontWeight: 700 }}>15% OFF</span>{' '}
+                  activo en tu carrito · Código{' '}
+                  <span style={{ fontFamily: 'monospace', color: '#E8CEAD', letterSpacing: '0.2em' }}>
+                    {COUPON_CODE}
+                  </span>
+                </>
+              ) : (
+                <>
+                  🌸{' '}
+                  <span style={{ color: '#B8924A', fontWeight: 700 }}>15% OFF</span>{' '}
+                  en tu primer ramo · Código{' '}
+                  <span style={{ fontFamily: 'monospace', color: '#E8CEAD', letterSpacing: '0.2em' }}>
+                    {COUPON_CODE}
+                  </span>
+                </>
+              )}
+            </span>
+
+            {isAlreadyClaimed ? (
+              <span
+                style={{
+                  background: '#4A6B53',
+                  color: '#fff',
+                  borderRadius: '9999px',
+                  padding: '0.15rem 0.65rem',
+                  fontSize: '0.62rem',
+                  letterSpacing: '0.12em',
+                  flexShrink: 0,
+                }}
+              >
+                ✓ Aplicado
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => applyCoupon(COUPON_CODE)}
+                style={{
+                  background: '#B8924A',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '9999px',
+                  padding: '0.2rem 0.75rem',
+                  fontSize: '0.62rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  transition: 'background 0.2s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#9A7A3C')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#B8924A')}
+              >
+                Aplicar
+              </button>
+            )}
+          </>
         )}
 
         <span style={{ color: '#B8924A', flexShrink: 0 }}>✦</span>

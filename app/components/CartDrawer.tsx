@@ -29,6 +29,7 @@ export default function CartDrawer() {
     appliedCoupon,
     applyCoupon,
     removeCoupon,
+    markFirstDiscountAsUsed,
     orderDetails,
     updateOrderDetails,
   } = useCart();
@@ -252,6 +253,11 @@ export default function CartDrawer() {
       } catch {
         // ignore
       }
+
+      if (discountAmount > 0 || appliedCoupon) {
+        markFirstDiscountAsUsed();
+      }
+      clearCart();
     } catch (err) {
       console.error("Error al registrar el pedido:", err);
       setValidationError(
@@ -410,6 +416,10 @@ export default function CartDrawer() {
           : (mpData.sandbox_init_point || mpData.init_point);
 
       if (redirectUrl) {
+        if (discountAmount > 0 || appliedCoupon) {
+          markFirstDiscountAsUsed();
+        }
+        clearCart();
         window.location.href = redirectUrl;
       } else {
         setMpError("No se obtuvo URL de pago de Mercado Pago.");

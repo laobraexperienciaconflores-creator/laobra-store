@@ -38,6 +38,7 @@ export interface OrderData {
   items: OrderItem[];
   operation_number?: string;
   voucher_url?: string;
+  public_token?: string;
   created_at?: string;
 }
 
@@ -89,6 +90,47 @@ export default function OrderReceiptPage({
 
     fetchOrder();
   }, [orderNumber, initialOrder]);
+
+  // Polling automático cada 6 segundos para actualizar el estado del pago en tiempo real
+  useEffect(() => {
+    const currentStatus = (order?.payment_status || "").toLowerCase().trim();
+    if (
+      currentStatus === "verificado" ||
+      currentStatus === "pagado" ||
+      currentStatus === "confirmado" ||
+      currentStatus === "rechazado"
+    ) {
+      return;
+    }
+
+    const targetParam = initialOrder?.public_token || initialOrder?.order_number || orderNumber;
+    if (!targetParam) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/orders/${encodeURIComponent(targetParam)}`, {
+          cache: "no-store",
+        });
+        const data = await res.json();
+        if (data.success && data.order) {
+          setOrder((prev) => {
+            if (
+              !prev ||
+              prev.payment_status !== data.order.payment_status ||
+              prev.status !== data.order.status
+            ) {
+              return { ...prev, ...data.order };
+            }
+            return prev;
+          });
+        }
+      } catch {
+        // Ignorar errores transitorios de red
+      }
+    }, 6000);
+
+    return () => clearInterval(interval);
+  }, [order?.payment_status, orderNumber, initialOrder]);
 
   const formattedTotal = order
     ? new Intl.NumberFormat("es-PE", {
@@ -152,23 +194,43 @@ export default function OrderReceiptPage({
 
   const totalItemsCount = order?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0;
 
+  useEffect(() => {
+    if (hasDiscount) {
+      try {
+        localStorage.setItem("laobra_first_discount_used", "true");
+        localStorage.removeItem("laobra_coupon_v2");
+      } catch {
+        // Ignorar
+      }
+    }
+  }, [hasDiscount]);
+
   const getStatusBadge = () => {
-    const status = order?.payment_status?.toLowerCase();
-    if (status === "pagado" || status === "confirmado") {
+    const status = (order?.payment_status || "").toLowerCase().trim();
+    if (status === "verificado" || status === "pagado" || status === "confirmado") {
       return {
-        label: "Confirmación de pago: Confirmado",
+        label: "Confirmación de pago: Pago Verificado",
         bg: "bg-[#E6F4EA]",
         text: "text-[#137333]",
         border: "border-[#CEEAD6]",
-        desc: "Tu pago ha sido validado exitosamente. Tu arreglo está programado para elaboración.",
+        desc: "Tu pago ha sido validado exitosamente por nuestro equipo. Tu arreglo floral está programado para elaboración y entrega.",
+      };
+    }
+    if (status === "rechazado") {
+      return {
+        label: "Confirmación de pago: Pago Observado o Rechazado",
+        bg: "bg-[#FCE8E6]",
+        text: "text-[#C5221F]",
+        border: "border-[#FAD2CF]",
+        desc: "El comprobante enviado no pudo ser verificado. Por favor, contáctanos por WhatsApp para regularizar tu pedido.",
       };
     }
     return {
-      label: "Confirmación de pago: Pendiente",
+      label: "Confirmación de pago: Pendiente de Verificación",
       bg: "bg-[#FEF7E0]",
       text: "text-[#B06000]",
       border: "border-[#FEEFC3]",
-      desc: "Comprobante en proceso de verificación por nuestro equipo.",
+      desc: "Comprobante en proceso de verificación por nuestro equipo de floristería.",
     };
   };
 
@@ -442,9 +504,13 @@ export default function OrderReceiptPage({
               <div className="p-3 bg-[#FDF8F3] border border-[#F3E2CE]">
                 <p className="text-[#6B6560] text-[10px] uppercase">Estado de la transacción</p>
                 <p className="text-sm font-semibold mt-0.5">
-                  {order.payment_status === "pagado" || order.payment_status === "confirmado"
-                    ? "✓ Pago Verificado"
-                    : "⏳ Pendiente de Confirmación"}
+                  {order.payment_status === "verificado" || order.payment_status === "pagado" || order.payment_status === "confirmado" ? (
+                    <span className="text-[#137333]">✓ Pago Verificado</span>
+                  ) : order.payment_status === "rechazado" ? (
+                    <span className="text-[#C5221F]">✕ Pago Rechazado</span>
+                  ) : (
+                    <span className="text-[#B06000]">⏳ Pendiente de Confirmación</span>
+                  )}
                 </p>
               </div>
             </div>

@@ -9,19 +9,27 @@ const DISCOUNT_PERCENTAGE = '15%';
 
 export default function PromoModal() {
   const pathname = usePathname();
-  const isAdminRoute = Boolean(pathname?.startsWith('/admin'));
+  // La promo ÚNICAMENTE debe mostrarse en la página principal (home)
+  const isHomePage = pathname === '/' || pathname === '';
 
-  const { applyCoupon, appliedCoupon } = useCart();
+  const { applyCoupon, appliedCoupon, isFirstDiscountUsed } = useCart();
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isExitIntent, setIsExitIntent] = useState(false);
   const [exitIntentFired, setExitIntentFired] = useState(false);
 
+  // Bloquear si no es la página principal o si el cliente ya usó su descuento de primera compra
+  const isBlocked =
+    !isHomePage ||
+    isFirstDiscountUsed ||
+    (typeof window !== "undefined" &&
+      localStorage.getItem("laobra_first_discount_used") === "true");
+
   const isAlreadyClaimed = Boolean(appliedCoupon && appliedCoupon.code === COUPON_CODE);
 
-  // 1. Mostrar al entrar a la web (tras 600ms) - NUNCA en rutas de admin
+  // 1. Mostrar al entrar a la web (tras 600ms) - ÚNICAMENTE en la página principal
   useEffect(() => {
-    if (isAdminRoute) {
+    if (isBlocked) {
       setIsOpen(false);
       return;
     }
@@ -32,11 +40,11 @@ export default function PromoModal() {
     }, 600);
 
     return () => clearTimeout(welcomeTimer);
-  }, [isAdminRoute]);
+  }, [isBlocked]);
 
-  // 2. Detectar intención de salida (cuando el cursor sube a cerrar la pestaña) - NUNCA en admin
+  // 2. Detectar intención de salida - ÚNICAMENTE en la página principal
   useEffect(() => {
-    if (isAdminRoute) {
+    if (isBlocked) {
       return;
     }
 
@@ -50,10 +58,10 @@ export default function PromoModal() {
 
     document.addEventListener('mouseleave', handleMouseLeave);
     return () => document.removeEventListener('mouseleave', handleMouseLeave);
-  }, [exitIntentFired, isAdminRoute]);
+  }, [exitIntentFired, isBlocked]);
 
-  // Si está en la ruta de administración, no renderizar nada
-  if (isAdminRoute) {
+  // Si no estamos en la página principal o ya se usó el descuento, no renderizar nada
+  if (isBlocked) {
     return null;
   }
 

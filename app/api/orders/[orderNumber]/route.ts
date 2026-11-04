@@ -100,7 +100,14 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({ success: true, order });
+    return NextResponse.json(
+      { success: true, order },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Error al obtener pedido:", error);
     return NextResponse.json(

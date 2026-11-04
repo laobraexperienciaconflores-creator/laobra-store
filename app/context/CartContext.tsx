@@ -85,6 +85,8 @@ interface CartContextType {
   appliedCoupon: Coupon | null;
   applyCoupon: (code: string) => { success: boolean; message: string };
   removeCoupon: () => void;
+  isFirstDiscountUsed: boolean;
+  markFirstDiscountAsUsed: () => void;
   orderDetails: OrderDetails;
   updateOrderDetails: (fields: Partial<OrderDetails>) => void;
 }
@@ -100,6 +102,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [orderDetails, setOrderDetails] = useState<OrderDetails>(initialOrderDetails);
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const [isFirstDiscountUsed, setIsFirstDiscountUsed] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
 
   // Load from localStorage safely on mount
@@ -119,11 +122,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setOrderDetails((prev) => ({ ...prev, ...parsedDetails }));
       }
 
+      const discountAlreadyUsed =
+        localStorage.getItem("laobra_first_discount_used") === "true";
+      setIsFirstDiscountUsed(discountAlreadyUsed);
+
       const isCouponExplicitlyRemoved =
         localStorage.getItem("laobra_coupon_removed") === "true";
 
       const savedCoupon = localStorage.getItem(COUPON_STORAGE_KEY);
-      if (!isCouponExplicitlyRemoved) {
+
+      if (discountAlreadyUsed) {
+        // Si ya usó el cupón de bienvenida en una compra anterior, no aplicar
+        setAppliedCoupon(null);
+        localStorage.removeItem(COUPON_STORAGE_KEY);
+      } else if (!isCouponExplicitlyRemoved) {
         if (savedCoupon) {
           const parsedCoupon = JSON.parse(savedCoupon);
           if (parsedCoupon?.code && AVAILABLE_COUPONS[parsedCoupon.code.toUpperCase()]) {
@@ -223,6 +235,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const applyCoupon = (code: string) => {
     const cleanCode = code.trim().toUpperCase();
+
+    const isUsed =
+      isFirstDiscountUsed ||
+      (typeof window !== "undefined" &&
+        localStorage.getItem("laobra_first_discount_used") === "true");
+
+    if (isUsed && (cleanCode === "LAOBRA01" || cleanCode === "PRIMERRAMO15")) {
+      return {
+        success: false,
+        message:
+          "El cupón del 15% de bienvenida es exclusivo para tu primera compra y ya fue utilizado.",
+      };
+    }
+
     const coupon = AVAILABLE_COUPONS[cleanCode];
 
     if (coupon) {
@@ -244,6 +270,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
       success: false,
       message: "El código de cupón no es válido o ha expirado.",
     };
+  };
+
+  const markFirstDiscountAsUsed = () => {
+    setIsFirstDiscountUsed(true);
+    setAppliedCoupon(null);
+    try {
+      localStorage.setItem("laobra_first_discount_used", "true");
+      localStorage.removeItem(COUPON_STORAGE_KEY);
+      localStorage.setItem("laobra_coupon_removed", "true");
+    } catch {
+      // Ignore
+    }
   };
 
   const removeCoupon = () => {
@@ -297,6 +335,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         appliedCoupon,
         applyCoupon,
         removeCoupon,
+        isFirstDiscountUsed,
+        markFirstDiscountAsUsed,
         orderDetails,
         updateOrderDetails,
       }}

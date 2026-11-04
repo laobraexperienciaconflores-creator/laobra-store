@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server";
 import { createClient } from "../../../../../lib/supabaseServer";
 import { getSupabaseAdmin } from "../../../../../lib/supabaseAdmin";
@@ -47,11 +46,16 @@ export async function PATCH(
     const { id } = await params;
     const admin = getSupabaseAdmin();
 
+    const orderStatus = body.paymentStatus === "verificado" ? "confirmado" : "rechazado";
+
     const { data: order, error } = await admin
         .from("orders")
-        .update({ payment_status: body.paymentStatus })
+        .update({
+            payment_status: body.paymentStatus,
+            status: orderStatus,
+        })
         .eq("id", id)
-        .select("id, order_number, payment_status")
+        .select("id, order_number, payment_status, status, public_token")
         .maybeSingle();
 
     if (error) {
