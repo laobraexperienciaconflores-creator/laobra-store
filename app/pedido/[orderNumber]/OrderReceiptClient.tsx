@@ -190,12 +190,16 @@ export default function OrderReceiptPage({
   }
 
   if (error || !order) {
+    const isRestricted = error?.includes("privacidad") || error?.includes("seguridad");
+
     return (
       <div className="min-h-screen bg-[#FDF8F3] flex flex-col items-center justify-center p-6 text-center">
         <div className="max-w-md p-8 bg-white border border-[#F3E2CE] shadow-sm">
-          <p className="text-2xl font-serif mb-2">Pedido no encontrado</p>
-          <p className="text-xs text-[#6B6560] mb-6">
-            No pudimos localizar la boleta asociada al código <strong>#{orderNumber}</strong>.
+          <p className="text-2xl font-serif mb-2">
+            {isRestricted ? "Acceso restringido" : "Pedido no encontrado"}
+          </p>
+          <p className="text-xs text-[#6B6560] mb-6 leading-relaxed">
+            {error || `No pudimos localizar la boleta asociada al código #${orderNumber}.`}
           </p>
           <Link
             href="/"

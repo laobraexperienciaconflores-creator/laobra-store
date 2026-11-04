@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient as createServerClient } from "@/app/lib/supabaseServer";
+import { getSupabaseAdmin } from "@/app/lib/supabaseAdmin";
+import { isAdminEmail } from "@/app/lib/adminAuth";
 
 export async function GET(
   request: Request,
@@ -10,112 +12,99 @@ export async function GET(
 
     if (!orderNumber) {
       return NextResponse.json(
-        { success: false, error: "Número de pedido no especificado" },
+        { success: false, error: "Identificador de pedido no especificado." },
         { status: 400 }
       );
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey =
-      process.env.SUPABASE_SECRET_KEY ||
-      process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const cleanParam = orderNumber.trim();
+    const isSequentialOrder = cleanParam.toUpperCase().startsWith("LAOBRA-");
 
-    if (
-      supabaseUrl &&
-      supabaseKey &&
-      !supabaseUrl.includes("tu-proyecto") &&
-      !supabaseKey.includes("tu-anon-key")
-    ) {
-      const supabase = createClient(supabaseUrl, supabaseKey);
-
-      let { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("order_number", orderNumber)
-        .maybeSingle();
-
-      if (!data) {
-        // Fallback: buscar por public_token o por UUID id
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderNumber);
-        const query = isUuid
-          ? supabase.from("orders").select("*").or(`public_token.eq.${orderNumber},id.eq.${orderNumber}`)
-          : supabase.from("orders").select("*").eq("public_token", orderNumber);
-
-        const fallback = await query.maybeSingle();
-        data = fallback.data;
-        error = fallback.error;
+    // 1. Verificar si quien consulta es el Administrador de LA OBRA
+    let isAdmin = false;
+    try {
+      const serverSupabase = await createServerClient();
+      const { data: authData } = await serverSupabase.auth.getUser();
+      if (authData?.user?.email && isAdminEmail(authData.user.email)) {
+        isAdmin = true;
       }
-
-      if (error || !data) {
-        return NextResponse.json(
-          { success: false, error: "Pedido no encontrado" },
-          { status: 404 }
-        );
-      }
-
-      // Generar URL firmada si el voucher es una ruta interna de Supabase Storage
-      if (
-        data.voucher_url &&
-        !data.voucher_url.startsWith("http") &&
-        !data.voucher_url.startsWith("data:")
-      ) {
-        try {
-          const { data: signedData } = await supabase.storage
-            .from("payment-vouchers")
-            .createSignedUrl(data.voucher_url, 3600);
-          if (signedData?.signedUrl) {
-            data.voucher_url = signedData.signedUrl;
-          }
-        } catch {
-          // Si falla la firma, mantener valor original
-        }
-      }
-
-      return NextResponse.json({ success: true, order: data });
+    } catch {
+      isAdmin = false;
     }
 
-    // Modo simulación si Supabase no está conectado
-    return NextResponse.json({
-      success: true,
-      simulated: true,
-      order: {
-        order_number: orderNumber,
-        status: "pendiente",
-        payment_status: "pendiente",
-        payment_method: "yape_plin",
-        total_amount: 135,
-        currency: "PEN",
-        buyer_name: "Cliente de prueba",
-        buyer_phone: "+51 988 559 304",
-        recipient_name: "Destinatario de prueba",
-        recipient_phone: "+51 912 345 678",
-        delivery_address: "Av. Larco 1234, Dpto 402 - Miraflores",
-        delivery_reference: "Frente al parque",
-        delivery_date: "2026-10-28",
-        delivery_time: "10:00 AM",
-        dedication: "Con todo mi amor en este día tan especial.",
-        dedication_from: "Mateo",
-        items: [
-          {
-            id: "melocoton-silvestre",
-            name: "Melocotón Silvestre",
-            price: 135,
-            quantity: 1,
-            imageUrl: "/products/ramo-durazno-silvestre.jpg",
-            discountAmount: 20.25,
-            couponCode: "LAOBRA01",
-            discountPercentage: 15,
-            deliveryCost: 20.25,
-            itemsSubtotal: 135,
-          },
-        ],
-        created_at: new Date().toISOString(),
-      },
-    });
+    // 2. PROTECCIÓN DE PRIVACIDAD:
+    // Un usuario anónimo NO puede consultar pedidos por número secuencial (ej. LAOBRA-0011),
+    // ya que permitiría enumerar y ver los nombres, direcciones, teléfonos y dedicatorias de otros clientes.
+    // Solo los administradores pueden consultar por número de pedido secuencial.
+    if (isSequentialOrder && !isAdmin) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Por privacidad y protección de datos personales, los pedidos no pueden consultarse por número público. Utiliza el enlace privado único generado para tu compra o inicia sesión como administrador.",
+        },
+        { status: 403 }
+      );
+    }
+
+    // 3. Conexión segura con privilegios administrativos en el servidor
+    let supabase;
+    try {
+      supabase = getSupabaseAdmin();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Faltan credenciales de Supabase en el servidor." },
+        { status: 500 }
+      );
+    }
+
+    let query = supabase.from("orders").select("*");
+
+    if (isAdmin && isSequentialOrder) {
+      // El administrador autenticado sí puede buscar por LAOBRA-XXXX
+      query = query.eq("order_number", cleanParam);
+    } else {
+      // Clientes y no-administradores SOLO pueden consultar con el token público aleatorio (UUID)
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanParam);
+      if (isUuid) {
+        query = query.or(`public_token.eq.${cleanParam},id.eq.${cleanParam}`);
+      } else {
+        query = query.eq("public_token", cleanParam);
+      }
+    }
+
+    const { data: order, error } = await query.maybeSingle();
+
+    if (error || !order) {
+      return NextResponse.json(
+        { success: false, error: "Pedido no encontrado o enlace inválido." },
+        { status: 404 }
+      );
+    }
+
+    // 4. Si el voucher es una ruta interna privada de Storage, firmar URL temporal
+    if (
+      order.voucher_url &&
+      !order.voucher_url.startsWith("http") &&
+      !order.voucher_url.startsWith("data:")
+    ) {
+      try {
+        const { data: signedData } = await supabase.storage
+          .from("payment-vouchers")
+          .createSignedUrl(order.voucher_url, 3600);
+        if (signedData?.signedUrl) {
+          order.voucher_url = signedData.signedUrl;
+        }
+      } catch {
+        // Ignorar si falla
+      }
+    }
+
+    return NextResponse.json({ success: true, order });
   } catch (error: any) {
     console.error("Error al obtener pedido:", error);
     return NextResponse.json(
-      { success: false, error: error?.message || "Error interno del servidor" },
+      { success: false, error: error?.message || "Error interno del servidor." },
       { status: 500 }
     );
   }
