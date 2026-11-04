@@ -9,8 +9,10 @@ const DISCOUNT_PERCENTAGE = '15%';
 
 export default function PromoModal() {
   const pathname = usePathname();
-  // La promo ÚNICAMENTE debe mostrarse en la página principal (home)
-  const isHomePage = pathname === '/' || pathname === '';
+  // La promo ÚNICAMENTE debe mostrarse en la página raíz ("/")
+  // Jamás en /pedido, /orders, /admin ni ninguna subpágina
+  const isBrowserHome = typeof window === "undefined" || window.location.pathname === "/";
+  const isHomePage = (pathname === "/" || pathname === "") && isBrowserHome;
 
   const { applyCoupon, appliedCoupon, isFirstDiscountUsed } = useCart();
   const [isOpen, setIsOpen] = useState(false);
@@ -18,12 +20,13 @@ export default function PromoModal() {
   const [isExitIntent, setIsExitIntent] = useState(false);
   const [exitIntentFired, setExitIntentFired] = useState(false);
 
-  // Bloquear si no es la página principal o si el cliente ya usó su descuento de primera compra
+  // Bloquear de inmediato si no es exactamente la página principal o si ya se usó el descuento
   const isBlocked =
     !isHomePage ||
     isFirstDiscountUsed ||
     (typeof window !== "undefined" &&
-      localStorage.getItem("laobra_first_discount_used") === "true");
+      (window.location.pathname !== "/" ||
+        localStorage.getItem("laobra_first_discount_used") === "true"));
 
   const isAlreadyClaimed = Boolean(appliedCoupon && appliedCoupon.code === COUPON_CODE);
 

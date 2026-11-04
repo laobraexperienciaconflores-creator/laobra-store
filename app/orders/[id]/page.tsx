@@ -5,8 +5,6 @@ import { isAdminEmail } from "@/app/lib/adminAuth";
 import OrderReceiptClient, { OrderData } from "@/app/pedido/[orderNumber]/OrderReceiptClient";
 
 export const instant = false;
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 type OrderPageProps = {
     params: Promise<{ id: string }>;
