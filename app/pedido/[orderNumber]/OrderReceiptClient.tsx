@@ -11,6 +11,11 @@ interface OrderItem {
   price: number;
   quantity: number;
   imageUrl?: string;
+  discountAmount?: number;
+  couponCode?: string;
+  discountPercentage?: number;
+  deliveryCost?: number;
+  itemsSubtotal?: number;
 }
 
 interface OrderData {
@@ -93,8 +98,40 @@ export default function OrderReceiptPage({
       (acc, item) => acc + Number(item.price) * item.quantity,
       0
     ) || 0;
-  const hasDiscount = order ? itemsSubtotal > order.total_amount + 0.01 : false;
-  const discountDifference = hasDiscount ? itemsSubtotal - (order?.total_amount || 0) : 0;
+
+  const totalAmount = Number(order?.total_amount || 0);
+  const metaItem = order?.items?.[0];
+
+  let discountAmount = Number(metaItem?.discountAmount ?? 0);
+  let couponCode = metaItem?.couponCode || "";
+  let deliveryCost = metaItem?.deliveryCost !== undefined ? Number(metaItem.deliveryCost) : -1;
+
+  if (order && deliveryCost < 0) {
+    if (itemsSubtotal >= 250) {
+      deliveryCost = 0;
+      discountAmount = Math.max(0, itemsSubtotal - totalAmount);
+    } else {
+      const fifteenPercent = Math.round(itemsSubtotal * 0.15 * 100) / 100;
+      const diffWithDiscount = Math.round((totalAmount - (itemsSubtotal - fifteenPercent)) * 100) / 100;
+      const diffNoDiscount = Math.round((totalAmount - itemsSubtotal) * 100) / 100;
+
+      if ([0, 10, 15, 20, 25, 30].includes(diffWithDiscount)) {
+        discountAmount = fifteenPercent;
+        couponCode = "LAOBRA01";
+        deliveryCost = diffWithDiscount;
+      } else if ([0, 10, 15, 20, 25, 30].includes(diffNoDiscount)) {
+        discountAmount = 0;
+        deliveryCost = diffNoDiscount;
+      } else if (itemsSubtotal > totalAmount) {
+        discountAmount = itemsSubtotal - totalAmount;
+        deliveryCost = 0;
+      } else {
+        deliveryCost = Math.max(0, totalAmount - itemsSubtotal);
+      }
+    }
+  }
+
+  const hasDiscount = discountAmount > 0;
 
   const formattedSubtotal = new Intl.NumberFormat("es-PE", {
     style: "currency",
@@ -106,7 +143,7 @@ export default function OrderReceiptPage({
     style: "currency",
     currency: "PEN",
     minimumFractionDigits: 2,
-  }).format(discountDifference);
+  }).format(discountAmount);
 
   const totalItemsCount = order?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0;
 
@@ -242,6 +279,7 @@ export default function OrderReceiptPage({
                           fill
                           className="object-cover"
                           sizes="48px"
+                          unoptimized={item.imageUrl.startsWith("data:")}
                         />
                       </div>
                     )}
@@ -250,6 +288,16 @@ export default function OrderReceiptPage({
                       <p className="text-[#6B6560] text-[11px]">
                         {item.quantity}x a S/ {Number(item.price).toFixed(2)} c/u
                       </p>
+                      {item.imageUrl?.startsWith("data:") && (
+                        <a
+                          href={item.imageUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[11px] text-[#B8924A] hover:underline inline-block mt-0.5"
+                        >
+                          Ver foto de referencia completa ↗
+                        </a>
+                      )}
                     </div>
                   </div>
                   <span className="font-semibold text-sm">
@@ -271,13 +319,21 @@ export default function OrderReceiptPage({
               </div>
               {hasDiscount && (
                 <div className="flex justify-between text-[#4A6B53] font-medium">
-                  <span>Descuento aplicado:</span>
+                  <span>Descuento aplicado {couponCode ? `(${couponCode})` : ""}:</span>
                   <span>-{formattedDiscount}</span>
                 </div>
               )}
               <div className="flex justify-between text-[#6B6560]">
                 <span>Envío a domicilio:</span>
-                <span>{itemsSubtotal >= 250 ? "¡GRATIS! (Compras ≥ S/ 250)" : "Tarifa incluida en el pago"}</span>
+                <span>
+                  {deliveryCost === 0 || itemsSubtotal >= 250 ? (
+                    <span className="text-[#4A6B53] font-medium">¡GRATIS! (Compras ≥ S/ 250)</span>
+                  ) : deliveryCost > 0 ? (
+                    `S/ ${deliveryCost.toFixed(2)}`
+                  ) : (
+                    "Tarifa incluida en el pago"
+                  )}
+                </span>
               </div>
               <div className="flex justify-between text-base font-semibold text-black pt-2 border-t border-[#F3E2CE]">
                 <span>Total pagado:</span>

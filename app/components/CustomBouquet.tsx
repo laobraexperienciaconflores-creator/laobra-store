@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useId } from "react";
+import { useState, useId, useRef } from "react";
 import Image from "next/image";
 import { useCart } from "../context/CartContext";
-import { WHATSAPP_NUMBER } from "../lib/constants";
 import { FREE_DELIVERY_THRESHOLD } from "../lib/delivery";
 
 export type BouquetCategory = "estandar" | "exclusivo" | "lujo";
@@ -107,9 +106,9 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
       L: {
         size: "L",
         name: "Grande (L)",
-        badge: "200 – 290 soles",
+        badge: "200 – 295 soles",
         minPrice: 200,
-        maxPrice: 290,
+        maxPrice: 295,
         defaultPrice: 245,
         description: "Composición de autor exuberante, dramática y sofisticada.",
       },
@@ -242,6 +241,65 @@ export default function CustomBouquet() {
   ]);
   const [customNotes, setCustomNotes] = useState<string>("");
   const [isAdded, setIsAdded] = useState(false);
+  const referenceInputRef = useRef<HTMLInputElement>(null);
+  const [referenceImage, setReferenceImage] = useState<string | null>(null);
+  const [referenceFileName, setReferenceFileName] = useState<string | null>(null);
+
+  const handleReferenceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Por favor selecciona una imagen menor a 10MB.");
+      return;
+    }
+
+    setReferenceFileName(file.name);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = document.createElement("img");
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_DIM = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_DIM) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          }
+        } else {
+          if (height > MAX_DIM) {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.78);
+          setReferenceImage(compressedDataUrl);
+        } else {
+          setReferenceImage(event.target?.result as string);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveReference = () => {
+    setReferenceImage(null);
+    setReferenceFileName(null);
+    if (referenceInputRef.current) {
+      referenceInputRef.current.value = "";
+    }
+  };
 
   // Al cambiar categoría o tamaño, sincronizar el precio con el nuevo rango
   const handleCategoryChange = (newCategory: BouquetCategory) => {
@@ -289,14 +347,16 @@ export default function CustomBouquet() {
       : COLOR_PRESETS.find((p) => p.id === selectedPreset)?.label || "A elección";
 
   const handleAddToCart = () => {
-    const customId = `custom-${category}-${size}-${price}`;
-    const customName = `Ramo Personalizado · ${categoryConfig.name} (${size}) [${colorSummary}]`;
+    const customId = `custom-${category}-${size}-${price}-${Date.now()}`;
+    const customName = `Ramo Personalizado · ${categoryConfig.name} (${size}) [${colorSummary}]${
+      referenceImage ? " 📸 (Con referencia)" : ""
+    }`;
 
     addItem({
       id: customId,
       name: customName,
       price: price,
-      imageUrl: categoryConfig.imageUrl,
+      imageUrl: referenceImage || categoryConfig.imageUrl,
     });
 
     setIsAdded(true);
@@ -304,28 +364,6 @@ export default function CustomBouquet() {
       setIsAdded(false);
       openCart();
     }, 800);
-  };
-
-  const handleWhatsAppOrder = () => {
-    let msg = `*Pedido Personalizado · LA OBRA*\n\n`;
-    msg += `🌸 *Categoría:* ${categoryConfig.name}\n`;
-    msg += `📏 *Tamaño:* ${sizeConfig.name}\n`;
-    msg += `💰 *Presupuesto asignado:* S/ ${price}.00\n`;
-    msg += `🎨 *Paleta de colores:* ${colorSummary}\n`;
-    if (customNotes.trim()) {
-      msg += `📝 *Detalles especiales:* "${customNotes.trim()}"\n`;
-    }
-    if (isFreeDeliveryEligible) {
-      msg += `✨ *Califica para Envío GRATIS* (compra ≥ S/ 250)\n`;
-    }
-    msg += `\n¿Tienen disponibilidad para coordinar la entrega?`;
-
-    const encoded = encodeURIComponent(msg);
-    window.open(
-      `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`,
-      "_blank",
-      "noopener,noreferrer"
-    );
   };
 
   return (
@@ -608,25 +646,133 @@ export default function CustomBouquet() {
                   maxLength={150}
                 />
               </div>
+
+              {/* Sección: Subir foto de ramo de referencia */}
+              <div className="pt-4 border-t border-[#F3E2CE] space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[11px] text-[#6B6560] uppercase font-semibold">
+                    📸 Foto de tu ramo de referencia (opcional)
+                  </label>
+                  {referenceImage && (
+                    <span className="text-[10px] text-[#4A6B53] font-medium flex items-center gap-1">
+                      <span>✓</span> Foto cargada
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-[#6B6560] leading-relaxed">
+                  ¿Tienes una foto de Pinterest, Instagram o un ramo que viste? Súbela aquí para que nuestra florista la tome como referencia estética al armar tu diseño.
+                </p>
+
+                <input
+                  ref={referenceInputRef}
+                  type="file"
+                  accept="image/png, image/jpeg, image/webp"
+                  onChange={handleReferenceUpload}
+                  className="hidden"
+                  id="bouquet-reference-upload"
+                />
+
+                {referenceImage ? (
+                  <div className="p-3 bg-[#FAF3EC] border border-[#E8CEAD] rounded-xl flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-14 h-14 relative rounded-lg border border-[#E8CEAD] bg-white overflow-hidden flex-shrink-0 shadow-sm">
+                        <img
+                          src={referenceImage}
+                          alt="Ramo de referencia"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-black truncate">
+                          {referenceFileName || "ramo-referencia.jpg"}
+                        </p>
+                        <p className="text-[10px] text-[#4A6B53]">
+                          ✓ Lista para la florista en tu pedido
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => referenceInputRef.current?.click()}
+                        className="text-[11px] text-black hover:underline uppercase tracking-wider font-medium"
+                      >
+                        Cambiar
+                      </button>
+                      <span className="text-[#E8CEAD]">·</span>
+                      <button
+                        type="button"
+                        onClick={handleRemoveReference}
+                        className="text-[11px] text-red-600 hover:underline uppercase tracking-wider font-medium"
+                      >
+                        Quitar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label
+                    htmlFor="bouquet-reference-upload"
+                    className="w-full py-4 px-4 border border-dashed border-[#B8924A] rounded-xl bg-[#FDF8F3] hover:bg-[#FAF3EC] cursor-pointer flex flex-col items-center justify-center gap-1.5 transition-colors text-center group"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-white border border-[#E8CEAD] flex items-center justify-center text-[#B8924A] group-hover:scale-105 transition-transform shadow-xs">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                    </div>
+                    <span className="text-xs font-medium text-black">
+                      Subir foto o captura del ramo de referencia
+                    </span>
+                    <span className="text-[10px] text-[#6B6560]">
+                      Formatos JPG, PNG, WEBP (hasta 10MB)
+                    </span>
+                  </label>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Columna Derecha: Vista previa, resumen y botones de acción (5 cols) */}
           <div className="lg:col-span-5 sticky top-28 space-y-6">
             <div className="bg-white rounded-2xl overflow-hidden border border-[#E8CEAD] shadow-xl">
-              {/* Imagen de la categoría con badge */}
+              {/* Imagen de la categoría o foto de referencia con badge */}
               <div className="relative aspect-[4/3] bg-[#E8CEAD] overflow-hidden">
-                <Image
-                  src={categoryConfig.imageUrl}
-                  alt={`Ramo ${categoryConfig.name}`}
-                  fill
-                  className="object-cover transition-transform duration-700 hover:scale-105"
-                  sizes="(max-width: 1024px) 100vw, 40vw"
-                />
+                {referenceImage ? (
+                  <img
+                    src={referenceImage}
+                    alt="Ramo de referencia del cliente"
+                    className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                  />
+                ) : (
+                  <Image
+                    src={categoryConfig.imageUrl}
+                    alt={`Ramo ${categoryConfig.name}`}
+                    fill
+                    className="object-cover transition-transform duration-700 hover:scale-105"
+                    sizes="(max-width: 1024px) 100vw, 40vw"
+                  />
+                )}
                 <div className="absolute top-4 left-4 z-10 flex flex-col gap-1">
                   <span className="px-3 py-1 bg-black text-[#F3E2CE] text-[10px] uppercase tracking-widest font-medium rounded-full shadow-md">
                     {categoryConfig.name} · {sizeConfig.name}
                   </span>
+                  {referenceImage && (
+                    <span className="px-3 py-1 bg-[#B8924A] text-white text-[10px] uppercase tracking-widest font-semibold rounded-full shadow-md">
+                      📸 Foto de referencia
+                    </span>
+                  )}
                   {isFreeDeliveryEligible && (
                     <span className="px-3 py-1 bg-[#4A6B53] text-white text-[10px] uppercase tracking-widest font-semibold rounded-full shadow-md">
                       Envío Gratis
@@ -670,6 +816,14 @@ export default function CustomBouquet() {
                       {colorSummary}
                     </span>
                   </div>
+                  {referenceImage && (
+                    <div className="flex justify-between items-center text-[#4A6B53]">
+                      <span>Foto de referencia:</span>
+                      <span className="font-medium flex items-center gap-1">
+                        <span>📸</span> Adjunta
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between pt-2 border-t border-[#E8CEAD]">
                     <span className="text-[#6B6560]">Envío (desde Barranco):</span>
                     <span className="font-medium text-[#4A6B53]">
@@ -729,24 +883,6 @@ export default function CustomBouquet() {
                       <span>Agregar ramo personalizado al carrito</span>
                     </>
                   )}
-                </button>
-
-                {/* Botón 2: Consultar / Pedir por WhatsApp */}
-                <button
-                  type="button"
-                  onClick={handleWhatsAppOrder}
-                  className="w-full py-3 px-4 border border-black/30 hover:border-black text-black hover:bg-[#FAF3EC] text-xs uppercase tracking-wider font-medium transition-all flex items-center justify-center gap-2"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="15"
-                    height="15"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                  </svg>
-                  <span>Pedir o coordinar por WhatsApp</span>
                 </button>
               </div>
             </div>

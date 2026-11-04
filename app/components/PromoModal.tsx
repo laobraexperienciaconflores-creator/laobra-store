@@ -1,46 +1,61 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { useCart } from '../context/CartContext';
 
 const COUPON_CODE = 'LAOBRA01';
 const DISCOUNT_PERCENTAGE = '15%';
 
 export default function PromoModal() {
+  const pathname = usePathname();
+  const isAdminRoute = Boolean(pathname?.startsWith('/admin'));
+
   const { applyCoupon, appliedCoupon } = useCart();
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isExitIntent, setIsExitIntent] = useState(false);
   const [exitIntentFired, setExitIntentFired] = useState(false);
-  const [hasBeenShown, setHasBeenShown] = useState(false);
 
   const isAlreadyClaimed = Boolean(appliedCoupon && appliedCoupon.code === COUPON_CODE);
 
-  // 1. Mostrar al entrar a la web (tras 600ms)
+  // 1. Mostrar al entrar a la web (tras 600ms) - NUNCA en rutas de admin
   useEffect(() => {
+    if (isAdminRoute) {
+      setIsOpen(false);
+      return;
+    }
+
     const welcomeTimer = setTimeout(() => {
       setIsExitIntent(false);
       setIsOpen(true);
-      setHasBeenShown(true);
     }, 600);
 
     return () => clearTimeout(welcomeTimer);
-  }, []);
+  }, [isAdminRoute]);
 
-  // 2. Detectar intención de salida (cuando el cursor sube a cerrar la pestaña)
+  // 2. Detectar intención de salida (cuando el cursor sube a cerrar la pestaña) - NUNCA en admin
   useEffect(() => {
+    if (isAdminRoute) {
+      return;
+    }
+
     const handleMouseLeave = (e: MouseEvent) => {
       if (e.clientY <= 0 && !exitIntentFired) {
         setIsExitIntent(true);
         setIsOpen(true);
-        setHasBeenShown(true);
         setExitIntentFired(true);
       }
     };
 
     document.addEventListener('mouseleave', handleMouseLeave);
     return () => document.removeEventListener('mouseleave', handleMouseLeave);
-  }, [exitIntentFired]);
+  }, [exitIntentFired, isAdminRoute]);
+
+  // Si está en la ruta de administración, no renderizar nada
+  if (isAdminRoute) {
+    return null;
+  }
 
   const handleClose = () => {
     setIsOpen(false);

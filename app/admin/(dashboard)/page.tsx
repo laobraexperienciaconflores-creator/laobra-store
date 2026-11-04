@@ -1,9 +1,8 @@
-
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { createClient } from "../../lib/supabaseServer";
+import { getSupabaseAdmin } from "../../lib/supabaseAdmin";
 import PaymentActions from "./paymentActions";
-import VoucherLink from "./voucherLink";
 
 export default function AdminPage() {
     return (
@@ -22,13 +21,17 @@ export default function AdminPage() {
 async function OrdersContent() {
     await connection();
 
-    const supabase = await createClient();
+    // Intentar consultar con getSupabaseAdmin para bypass de RLS; si no, fallback a createClient
+    let supabase;
+    try {
+        supabase = getSupabaseAdmin();
+    } catch {
+        supabase = await createClient();
+    }
 
     const { data: orders, error } = await supabase
         .from("orders")
-        .select(
-            "id, order_number, buyer_name, total_amount, payment_method, payment_status, status, created_at, voucher_url"
-        )
+        .select("*")
         .order("created_at", { ascending: false })
         .limit(100);
 
@@ -120,57 +123,76 @@ async function OrdersContent() {
                             <th className="p-4">Cliente</th>
                             <th className="p-4">Total</th>
                             <th className="p-4">Método</th>
-                            <th className="p-4">Comprobante</th>
+                            <th className="p-4">Boleta</th>
                             <th className="p-4">Pago y acciones</th>
                             <th className="p-4">Estado del pedido</th>
                         </tr>
                     </thead>
 
                     <tbody>
-                        {orders?.map((order) => (
-                            <tr
-                                key={order.id}
-                                className="border-t border-white/10 align-top"
-                            >
-                                <td className="p-4 font-medium text-amber-400">
-                                    {order.order_number ?? order.id}
-                                </td>
+                        {orders?.map((order) => {
+                            const boletaUrl = order.order_number
+                                ? `/pedido/${encodeURIComponent(order.order_number)}`
+                                : order.public_token
+                                ? `/orders/${encodeURIComponent(order.public_token)}`
+                                : `/pedido/${encodeURIComponent(order.id)}`;
 
-                                <td className="p-4">
-                                    {order.buyer_name ?? "Sin nombre"}
-                                </td>
+                            return (
+                                <tr
+                                    key={order.id}
+                                    className="border-t border-white/10 align-top"
+                                >
+                                    <td className="p-4 font-medium text-amber-400">
+                                        <a
+                                            href={boletaUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1 font-semibold text-amber-400 hover:text-amber-300 hover:underline"
+                                            title="Abrir boleta de compra"
+                                        >
+                                            <span>{order.order_number ?? order.id}</span>
+                                            <span className="text-[10px] opacity-75">↗</span>
+                                        </a>
+                                    </td>
 
-                                <td className="whitespace-nowrap p-4">
-                                    S/{" "}
-                                    {Number(order.total_amount).toFixed(2)}
-                                </td>
+                                    <td className="p-4">
+                                        {order.buyer_name ?? "Sin nombre"}
+                                    </td>
 
-                                <td className="p-4">
-                                    {order.payment_method ?? "—"}
-                                </td>
+                                    <td className="whitespace-nowrap p-4">
+                                        S/{" "}
+                                        {Number(order.total_amount).toFixed(2)}
+                                    </td>
 
-                                <td className="p-4">
-                                    {order.voucher_url ? (
-                                        <VoucherLink orderId={order.id} />
-                                    ) : (
-                                        <span className="text-neutral-500">
-                                            Sin comprobante
-                                        </span>
-                                    )}
-                                </td>
+                                    <td className="p-4">
+                                        {order.payment_method ?? "—"}
+                                    </td>
 
-                                <td className="p-4">
-                                    <PaymentActions
-                                        orderId={order.id}
-                                        initialStatus={order.payment_status}
-                                    />
-                                </td>
+                                    <td className="p-4">
+                                        <a
+                                            href={boletaUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 rounded-md bg-amber-400 px-3 py-1.5 text-xs font-semibold text-neutral-950 shadow-sm transition hover:bg-amber-300"
+                                        >
+                                            <span>🧾</span>
+                                            <span>Ver boleta completa</span>
+                                        </a>
+                                    </td>
 
-                                <td className="p-4">
-                                    {order.status ?? "pendiente"}
-                                </td>
-                            </tr>
-                        ))}
+                                    <td className="p-4">
+                                        <PaymentActions
+                                            orderId={order.id}
+                                            initialStatus={order.payment_status}
+                                        />
+                                    </td>
+
+                                    <td className="p-4">
+                                        {order.status ?? "pendiente"}
+                                    </td>
+                                </tr>
+                            );
+                        })}
 
                         {orders?.length === 0 && (
                             <tr>

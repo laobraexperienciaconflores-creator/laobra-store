@@ -12,6 +12,12 @@ type OrderItem = {
     name?: string;
     price?: number;
     quantity?: number;
+    imageUrl?: string;
+    discountAmount?: number;
+    couponCode?: string;
+    discountPercentage?: number;
+    deliveryCost?: number;
+    itemsSubtotal?: number;
 };
 
 const formatMoney = (amount: number) =>
@@ -54,6 +60,46 @@ export default async function OrderPage({ params }: OrderPageProps) {
     }
 
     const items = (order.items ?? []) as OrderItem[];
+
+    const totalAmount = Number(order.total_amount ?? 0);
+    const itemsSubtotal = items.reduce(
+        (sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity ?? 1),
+        0
+    );
+    const totalItemsCount = items.reduce(
+        (sum, item) => sum + Number(item.quantity ?? 1),
+        0
+    );
+
+    const metaItem = items[0] as OrderItem | undefined;
+    let discountAmount = Number(metaItem?.discountAmount ?? 0);
+    let couponCode = metaItem?.couponCode || "";
+    let deliveryCost = metaItem?.deliveryCost !== undefined ? Number(metaItem.deliveryCost) : -1;
+
+    if (deliveryCost < 0) {
+        if (itemsSubtotal >= 250) {
+            deliveryCost = 0;
+            discountAmount = Math.max(0, itemsSubtotal - totalAmount);
+        } else {
+            const fifteenPercent = Math.round(itemsSubtotal * 0.15 * 100) / 100;
+            const diffWithDiscount = Math.round((totalAmount - (itemsSubtotal - fifteenPercent)) * 100) / 100;
+            const diffNoDiscount = Math.round((totalAmount - itemsSubtotal) * 100) / 100;
+
+            if ([0, 10, 15, 20, 25, 30].includes(diffWithDiscount)) {
+                discountAmount = fifteenPercent;
+                couponCode = "LAOBRA01";
+                deliveryCost = diffWithDiscount;
+            } else if ([0, 10, 15, 20, 25, 30].includes(diffNoDiscount)) {
+                discountAmount = 0;
+                deliveryCost = diffNoDiscount;
+            } else if (itemsSubtotal > totalAmount) {
+                discountAmount = itemsSubtotal - totalAmount;
+                deliveryCost = 0;
+            } else {
+                deliveryCost = Math.max(0, totalAmount - itemsSubtotal);
+            }
+        }
+    }
 
     // Genera una URL temporal para visualizar el comprobante privado.
     let voucherSignedUrl: string | null = null;
@@ -115,13 +161,35 @@ export default async function OrderPage({ params }: OrderPageProps) {
                                 key={item.id ?? `${item.name}-${index}`}
                                 className="flex justify-between gap-4"
                             >
-                                <div>
-                                    <p className="font-medium">
-                                        {item.name ?? "Producto"}
-                                    </p>
-                                    <p className="text-sm text-gray-500">
-                                        Cantidad: {item.quantity ?? 1}
-                                    </p>
+                                <div className="flex items-center gap-3">
+                                    {item.imageUrl && (
+                                        <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg border border-[#e9e0d4] bg-[#faf7f2]">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                                src={item.imageUrl}
+                                                alt={item.name ?? "Producto"}
+                                                className="h-full w-full object-cover"
+                                            />
+                                        </div>
+                                    )}
+                                    <div>
+                                        <p className="font-medium">
+                                            {item.name ?? "Producto"}
+                                        </p>
+                                        <p className="text-sm text-gray-500">
+                                            Cantidad: {item.quantity ?? 1}
+                                        </p>
+                                        {item.imageUrl?.startsWith("data:") && (
+                                            <a
+                                                href={item.imageUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-block mt-0.5 text-xs text-[#96764c] underline"
+                                            >
+                                                Ver foto de referencia completa ↗
+                                            </a>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <p className="whitespace-nowrap">
@@ -136,8 +204,26 @@ export default async function OrderPage({ params }: OrderPageProps) {
 
                     <div className="mt-6 border-t border-gray-100 pt-5 space-y-3">
                         <div className="flex justify-between text-sm text-gray-600">
-                            <span>Subtotal</span>
-                            <span>{formatMoney(Number(order.total_amount ?? 0))}</span>
+                            <span>Subtotal ({totalItemsCount} {totalItemsCount === 1 ? "artículo" : "artículos"})</span>
+                            <span>{formatMoney(itemsSubtotal)}</span>
+                        </div>
+
+                        {discountAmount > 0 && (
+                            <div className="flex justify-between text-sm font-medium text-[#4A6B53]">
+                                <span>Descuento {couponCode ? `(${couponCode})` : "aplicado"}</span>
+                                <span>-{formatMoney(discountAmount)}</span>
+                            </div>
+                        )}
+
+                        <div className="flex justify-between text-sm text-gray-600">
+                            <span>Envío a domicilio</span>
+                            <span>
+                                {deliveryCost === 0 ? (
+                                    <span className="font-medium text-[#4A6B53]">¡GRATIS!</span>
+                                ) : (
+                                    formatMoney(deliveryCost)
+                                )}
+                            </span>
                         </div>
 
                         <div className="flex justify-between text-sm text-gray-600">

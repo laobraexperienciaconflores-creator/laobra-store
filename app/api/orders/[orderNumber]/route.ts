@@ -17,7 +17,8 @@ export async function GET(
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      process.env.SUPABASE_SECRET_KEY ||
+      process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (
       supabaseUrl &&
@@ -27,17 +28,47 @@ export async function GET(
     ) {
       const supabase = createClient(supabaseUrl, supabaseKey);
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from("orders")
         .select("*")
         .eq("order_number", orderNumber)
-        .single();
+        .maybeSingle();
+
+      if (!data) {
+        // Fallback: buscar por public_token o por UUID id
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderNumber);
+        const query = isUuid
+          ? supabase.from("orders").select("*").or(`public_token.eq.${orderNumber},id.eq.${orderNumber}`)
+          : supabase.from("orders").select("*").eq("public_token", orderNumber);
+
+        const fallback = await query.maybeSingle();
+        data = fallback.data;
+        error = fallback.error;
+      }
 
       if (error || !data) {
         return NextResponse.json(
           { success: false, error: "Pedido no encontrado" },
           { status: 404 }
         );
+      }
+
+      // Generar URL firmada si el voucher es una ruta interna de Supabase Storage
+      if (
+        data.voucher_url &&
+        !data.voucher_url.startsWith("http") &&
+        !data.voucher_url.startsWith("data:")
+      ) {
+        try {
+          const { data: signedData } = await supabase.storage
+            .from("payment-vouchers")
+            .createSignedUrl(data.voucher_url, 3600);
+          if (signedData?.signedUrl) {
+            data.voucher_url = signedData.signedUrl;
+          }
+        } catch {
+          // Si falla la firma, mantener valor original
+        }
       }
 
       return NextResponse.json({ success: true, order: data });
@@ -71,6 +102,11 @@ export async function GET(
             price: 135,
             quantity: 1,
             imageUrl: "/products/ramo-durazno-silvestre.jpg",
+            discountAmount: 20.25,
+            couponCode: "LAOBRA01",
+            discountPercentage: 15,
+            deliveryCost: 20.25,
+            itemsSubtotal: 135,
           },
         ],
         created_at: new Date().toISOString(),

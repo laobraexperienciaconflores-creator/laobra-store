@@ -29,6 +29,10 @@ export async function POST(request: Request) {
       paymentMethod,
       operationNumber,
       voucherUrl,
+      discountAmount,
+      subtotal,
+      deliveryCost,
+      appliedCoupon,
     } = body;
 
     if (!Array.isArray(items) || items.length === 0) {
@@ -192,12 +196,21 @@ export async function POST(request: Request) {
             price: number;
             quantity: number;
             imageUrl?: string;
-          }) => ({
+          }, index: number) => ({
             id: item.id,
             name: item.name,
-            price: item.price,
-            quantity: item.quantity,
+            price: Number(item.price),
+            quantity: Number(item.quantity),
             imageUrl: item.imageUrl,
+            ...(index === 0
+              ? {
+                  discountAmount: Number(discountAmount) || 0,
+                  couponCode: appliedCoupon?.code || (Number(discountAmount) > 0 ? "LAOBRA01" : null),
+                  discountPercentage: appliedCoupon?.discountPercentage || (Number(discountAmount) > 0 ? 15 : 0),
+                  deliveryCost: Number(deliveryCost) || 0,
+                  itemsSubtotal: Number(subtotal) || 0,
+                }
+              : {}),
           })),
           status: "pendiente",
         },

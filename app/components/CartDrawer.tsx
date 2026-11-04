@@ -196,6 +196,10 @@ export default function CartDrawer() {
           paymentMethod: "yape_plin",
           operationNumber,
           voucherUrl: voucherFile,
+          discountAmount,
+          subtotal,
+          deliveryCost,
+          appliedCoupon,
         }),
       });
 
@@ -209,6 +213,45 @@ export default function CartDrawer() {
 
       generatedOrderNumber = data.orderNumber;
       generatedPublicToken = data.publicToken;
+
+      try {
+        const orderBackup = {
+          order_number: data.orderNumber,
+          public_token: data.publicToken,
+          status: "pendiente",
+          payment_status: "comprobante_enviado",
+          payment_method: "yape_plin",
+          total_amount: totalPrice,
+          currency: "PEN",
+          buyer_name: orderDetails.buyerName.trim(),
+          buyer_phone: orderDetails.buyerPhone.trim(),
+          recipient_name: orderDetails.recipientName.trim(),
+          recipient_phone: orderDetails.recipientPhone.trim(),
+          delivery_address: orderDetails.deliveryDistrict
+            ? `${orderDetails.deliveryDistrict} — ${orderDetails.deliveryAddress.trim()}`
+            : orderDetails.deliveryAddress.trim(),
+          delivery_reference: orderDetails.deliveryReference.trim(),
+          delivery_date: orderDetails.deliveryDate,
+          delivery_time: orderDetails.deliveryTime,
+          dedication: orderDetails.dedication.trim(),
+          dedication_from: orderDetails.dedicationFrom.trim(),
+          items: items.map((item, index) => ({
+            ...item,
+            ...(index === 0
+              ? {
+                  discountAmount,
+                  couponCode: appliedCoupon?.code || (discountAmount > 0 ? "LAOBRA01" : null),
+                  discountPercentage: appliedCoupon?.discountPercentage || (discountAmount > 0 ? 15 : 0),
+                  deliveryCost,
+                  itemsSubtotal: subtotal,
+                }
+              : {}),
+          })),
+        };
+        localStorage.setItem(`laobra_order_${data.orderNumber}`, JSON.stringify(orderBackup));
+      } catch {
+        // ignore
+      }
     } catch (err) {
       console.error("Error al registrar el pedido:", err);
       setValidationError(
@@ -328,6 +371,10 @@ export default function CartDrawer() {
           orderDetails,
           totalPrice,
           paymentMethod: "mercadopago",
+          discountAmount,
+          subtotal,
+          deliveryCost,
+          appliedCoupon,
         }),
       });
       const orderData = await orderRes.json();
@@ -577,6 +624,7 @@ export default function CartDrawer() {
                             fill
                             sizes="80px"
                             className="object-cover"
+                            unoptimized={item.imageUrl.startsWith("data:")}
                           />
                         </div>
 

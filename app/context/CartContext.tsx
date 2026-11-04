@@ -57,6 +57,11 @@ export const AVAILABLE_COUPONS: Record<string, Coupon> = {
     discountPercentage: 15,
     description: "15% de descuento en tu primer ramo",
   },
+  PRIMERRAMO15: {
+    code: "PRIMERRAMO15",
+    discountPercentage: 15,
+    description: "15% de descuento en tu primer ramo",
+  },
 };
 
 interface CartContextType {
@@ -114,14 +119,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setOrderDetails((prev) => ({ ...prev, ...parsedDetails }));
       }
 
+      const isCouponExplicitlyRemoved =
+        localStorage.getItem("laobra_coupon_removed") === "true";
+
       const savedCoupon = localStorage.getItem(COUPON_STORAGE_KEY);
-      if (savedCoupon) {
-        const parsedCoupon = JSON.parse(savedCoupon);
-        if (parsedCoupon?.code && AVAILABLE_COUPONS[parsedCoupon.code.toUpperCase()]) {
-          setAppliedCoupon(AVAILABLE_COUPONS[parsedCoupon.code.toUpperCase()]);
+      if (!isCouponExplicitlyRemoved) {
+        if (savedCoupon) {
+          const parsedCoupon = JSON.parse(savedCoupon);
+          if (parsedCoupon?.code && AVAILABLE_COUPONS[parsedCoupon.code.toUpperCase()]) {
+            setAppliedCoupon(AVAILABLE_COUPONS[parsedCoupon.code.toUpperCase()]);
+          } else {
+            setAppliedCoupon(AVAILABLE_COUPONS["LAOBRA01"]);
+          }
+        } else {
+          // Promoción de bienvenida por defecto (15% primer ramo)
+          setAppliedCoupon(AVAILABLE_COUPONS["LAOBRA01"]);
         }
-      } else if (localStorage.getItem("laobra_discount_claimed") === "true") {
-        setAppliedCoupon(AVAILABLE_COUPONS["LAOBRA01"]);
       }
     } catch {
       // Ignore storage errors
@@ -215,6 +228,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (coupon) {
       setAppliedCoupon(coupon);
       try {
+        localStorage.removeItem("laobra_coupon_removed");
         localStorage.setItem("laobra_discount_claimed", "true");
         localStorage.setItem(COUPON_STORAGE_KEY, JSON.stringify(coupon));
       } catch {
@@ -236,6 +250,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setAppliedCoupon(null);
     try {
       localStorage.removeItem(COUPON_STORAGE_KEY);
+      localStorage.setItem("laobra_coupon_removed", "true");
     } catch {
       // Ignore
     }
