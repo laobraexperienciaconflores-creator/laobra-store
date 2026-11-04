@@ -1,10 +1,11 @@
-﻿import Hero from "./components/Hero";
+import Hero from "./components/Hero";
 import Catalog from "./components/Catalog";
 import CustomBouquet from "./components/CustomBouquet";
 /*import AboutUs from "./components/AboutUs";*/
 import Benefits from "./components/Benefits";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import PromoModal from "./components/PromoModal";
 
 export default function Home() {
   return (
@@ -30,6 +31,9 @@ export default function Home() {
       </main>
 
       <Footer />
+
+      {/* Ventana emergente de 15% de bienvenida: ÚNICAMENTE en la página principal */}
+      <PromoModal />
     </>
   );
 }

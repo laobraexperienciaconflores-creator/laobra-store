@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { CartProvider } from "./context/CartContext";
 import CartDrawer from "./components/CartDrawer";
-import PromoModal from "./components/PromoModal";
 import WhatsAppButton from "./components/WhatsAppButton";
 
 
@@ -31,8 +30,6 @@ export default function RootLayout({
         <CartProvider>
           {children}
           <CartDrawer />
-          {/* Ventana emergente de 15% de descuento al entrar y al intentar salir */}
-          <PromoModal />
           {/* Botón flotante de WhatsApp */}
           <WhatsAppButton />
         </CartProvider>
