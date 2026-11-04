@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { WHATSAPP_NUMBER } from "../../lib/constants";
 
-interface OrderItem {
+export interface OrderItem {
   id: string;
   name: string;
   price: number;
@@ -18,7 +18,7 @@ interface OrderItem {
   itemsSubtotal?: number;
 }
 
-interface OrderData {
+export interface OrderData {
   order_number: string;
   status: string;
   payment_status: string;
@@ -41,20 +41,27 @@ interface OrderData {
   created_at?: string;
 }
 
+export type OrderReceiptClientProps = {
+  params?: Promise<{ orderNumber: string }>;
+  initialOrder?: OrderData | null;
+};
+
 export default function OrderReceiptPage({
   params,
-}: {
-  params: Promise<{ orderNumber: string }>;
-}) {
-  const resolvedParams = use(params);
-  const orderNumber = resolvedParams.orderNumber;
+  initialOrder,
+}: OrderReceiptClientProps) {
+  const resolvedParams = params ? use(params) : null;
+  const orderNumber = initialOrder?.order_number || resolvedParams?.orderNumber || "";
 
-  const [order, setOrder] = useState<OrderData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [order, setOrder] = useState<OrderData | null>(initialOrder || null);
+  const [loading, setLoading] = useState(!initialOrder && Boolean(orderNumber));
   const [error, setError] = useState<string | null>(null);
   const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
 
   useEffect(() => {
+    if (initialOrder) return;
+    if (!orderNumber) return;
+
     async function fetchOrder() {
       try {
         setLoading(true);
@@ -80,10 +87,8 @@ export default function OrderReceiptPage({
       }
     }
 
-    if (orderNumber) {
-      fetchOrder();
-    }
-  }, [orderNumber]);
+    fetchOrder();
+  }, [orderNumber, initialOrder]);
 
   const formattedTotal = order
     ? new Intl.NumberFormat("es-PE", {
