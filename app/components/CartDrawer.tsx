@@ -250,6 +250,10 @@ export default function CartDrawer() {
           })),
         };
         localStorage.setItem(`laobra_order_${data.orderNumber}`, JSON.stringify(orderBackup));
+        if (data.publicToken) {
+          localStorage.setItem(`laobra_token_${data.orderNumber}`, data.publicToken);
+          localStorage.setItem("laobra_last_order_token", data.publicToken);
+        }
       } catch {
         // ignore
       }

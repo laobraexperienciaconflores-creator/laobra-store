@@ -131,10 +131,10 @@ async function OrdersContent() {
 
                     <tbody>
                         {orders?.map((order) => {
-                            const boletaUrl = order.order_number
-                                ? `/pedido/${encodeURIComponent(order.order_number)}`
-                                : order.public_token
+                            const boletaUrl = order.public_token
                                 ? `/orders/${encodeURIComponent(order.public_token)}`
+                                : order.order_number
+                                ? `/pedido/${encodeURIComponent(order.order_number)}`
                                 : `/pedido/${encodeURIComponent(order.id)}`;
 
                             return (

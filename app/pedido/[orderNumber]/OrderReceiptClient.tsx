@@ -60,18 +60,41 @@ export default function OrderReceiptPage({
   const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
 
   useEffect(() => {
-    if (initialOrder) return;
-    if (!orderNumber) return;
+    if (!orderNumber && !initialOrder) return;
 
     async function fetchOrder() {
+      const target = initialOrder?.public_token || initialOrder?.order_number || orderNumber;
+      if (!target) return;
+
       try {
-        setLoading(true);
-        const res = await fetch(`/api/orders/${orderNumber}`);
+        if (!initialOrder) {
+          setLoading(true);
+        }
+
+        const storedToken =
+          (typeof window !== "undefined" &&
+            (localStorage.getItem(`laobra_token_${target}`) ||
+              localStorage.getItem(`laobra_token_${orderNumber}`) ||
+              localStorage.getItem("laobra_last_order_token"))) ||
+          initialOrder?.public_token ||
+          "";
+
+        const url = storedToken
+          ? `/api/orders/${encodeURIComponent(target)}?token=${encodeURIComponent(storedToken)}`
+          : `/api/orders/${encodeURIComponent(target)}`;
+
+        const res = await fetch(url, { cache: "no-store" });
         const data = await res.json();
 
         if (data.success && data.order) {
           setOrder(data.order);
-        } else {
+          try {
+            if (data.order.public_token) {
+              localStorage.setItem(`laobra_token_${data.order.order_number}`, data.order.public_token);
+            }
+            localStorage.setItem(`laobra_order_${data.order.order_number}`, JSON.stringify(data.order));
+          } catch {}
+        } else if (!initialOrder) {
           // Intentar rescatar de localStorage si se acaba de crear en la sesión
           const localBackup = localStorage.getItem(`laobra_order_${orderNumber}`);
           if (localBackup) {
@@ -82,7 +105,9 @@ export default function OrderReceiptPage({
         }
       } catch (err) {
         console.error("Error al cargar la boleta:", err);
-        setError("No se pudo cargar la información de la boleta.");
+        if (!initialOrder) {
+          setError("No se pudo cargar la información de la boleta.");
+        }
       } finally {
         setLoading(false);
       }
@@ -91,35 +116,48 @@ export default function OrderReceiptPage({
     fetchOrder();
   }, [orderNumber, initialOrder]);
 
-  // Polling automático cada 6 segundos para actualizar el estado del pago en tiempo real
+  // Actualización en tiempo real: polling cada 4s y refresco instantáneo al enfocar pestaña
   useEffect(() => {
-    const currentStatus = (order?.payment_status || "").toLowerCase().trim();
-    if (
-      currentStatus === "verificado" ||
-      currentStatus === "pagado" ||
-      currentStatus === "confirmado" ||
-      currentStatus === "rechazado"
-    ) {
-      return;
-    }
-
-    const targetParam = initialOrder?.public_token || initialOrder?.order_number || orderNumber;
+    const targetParam = initialOrder?.public_token || order?.public_token || initialOrder?.order_number || orderNumber;
     if (!targetParam) return;
 
-    const interval = setInterval(async () => {
+    let isMounted = true;
+
+    async function checkFreshStatus() {
       try {
-        const res = await fetch(`/api/orders/${encodeURIComponent(targetParam)}`, {
-          cache: "no-store",
-        });
+        const storedToken =
+          order?.public_token ||
+          initialOrder?.public_token ||
+          (typeof window !== "undefined"
+            ? localStorage.getItem(`laobra_token_${orderNumber}`) ||
+              localStorage.getItem("laobra_last_order_token")
+            : null) ||
+          "";
+
+        const url = storedToken
+          ? `/api/orders/${encodeURIComponent(targetParam)}?token=${encodeURIComponent(storedToken)}`
+          : `/api/orders/${encodeURIComponent(targetParam)}`;
+
+        const res = await fetch(url, { cache: "no-store" });
         const data = await res.json();
-        if (data.success && data.order) {
+
+        if (isMounted && data.success && data.order) {
           setOrder((prev) => {
             if (
               !prev ||
               prev.payment_status !== data.order.payment_status ||
               prev.status !== data.order.status
             ) {
-              return { ...prev, ...data.order };
+              const updated = { ...prev, ...data.order };
+              try {
+                if (data.order.order_number) {
+                  localStorage.setItem(
+                    `laobra_order_${data.order.order_number}`,
+                    JSON.stringify(updated)
+                  );
+                }
+              } catch {}
+              return updated;
             }
             return prev;
           });
@@ -127,10 +165,23 @@ export default function OrderReceiptPage({
       } catch {
         // Ignorar errores transitorios de red
       }
-    }, 6000);
+    }
 
-    return () => clearInterval(interval);
-  }, [order?.payment_status, orderNumber, initialOrder]);
+    // Polling cada 4 segundos
+    const interval = setInterval(checkFreshStatus, 4000);
+
+    // Refresco inmediato al hacer foco en la pestaña
+    const handleFocus = () => {
+      checkFreshStatus();
+    };
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [orderNumber, initialOrder, order?.public_token]);
 
   const formattedTotal = order
     ? new Intl.NumberFormat("es-PE", {

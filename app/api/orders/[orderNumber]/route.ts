@@ -3,6 +3,12 @@ import { createClient as createServerClient } from "@/app/lib/supabaseServer";
 import { getSupabaseAdmin } from "@/app/lib/supabaseAdmin";
 import { isAdminEmail } from "@/app/lib/adminAuth";
 
+function maskPhone(phone: string): string {
+  const clean = phone.trim();
+  if (clean.length <= 4) return "****";
+  return clean.slice(0, 3) + " *** " + clean.slice(-3);
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ orderNumber: string }> }
@@ -19,6 +25,14 @@ export async function GET(
 
     const cleanParam = orderNumber.trim();
     const isSequentialOrder = cleanParam.toUpperCase().startsWith("LAOBRA-");
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanParam);
+
+    // Obtener token secreto si viene por parámetro de URL o cabecera
+    const url = new URL(request.url);
+    const queryToken =
+      url.searchParams.get("token")?.trim() ||
+      request.headers.get("x-order-token")?.trim() ||
+      "";
 
     // 1. Verificar si quien consulta es el Administrador de LA OBRA
     let isAdmin = false;
@@ -32,22 +46,7 @@ export async function GET(
       isAdmin = false;
     }
 
-    // 2. PROTECCIÓN DE PRIVACIDAD:
-    // Un usuario anónimo NO puede consultar pedidos por número secuencial (ej. LAOBRA-0011),
-    // ya que permitiría enumerar y ver los nombres, direcciones, teléfonos y dedicatorias de otros clientes.
-    // Solo los administradores pueden consultar por número de pedido secuencial.
-    if (isSequentialOrder && !isAdmin) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Por privacidad y protección de datos personales, los pedidos no pueden consultarse por número público. Utiliza el enlace privado único generado para tu compra o inicia sesión como administrador.",
-        },
-        { status: 403 }
-      );
-    }
-
-    // 3. Conexión segura con privilegios administrativos en el servidor
+    // 2. Conexión segura con privilegios administrativos en el servidor
     let supabase;
     try {
       supabase = getSupabaseAdmin();
@@ -60,17 +59,12 @@ export async function GET(
 
     let query = supabase.from("orders").select("*");
 
-    if (isAdmin && isSequentialOrder) {
-      // El administrador autenticado sí puede buscar por LAOBRA-XXXX
+    if (isSequentialOrder) {
       query = query.eq("order_number", cleanParam);
+    } else if (isUuid) {
+      query = query.or(`public_token.eq.${cleanParam},id.eq.${cleanParam}`);
     } else {
-      // Clientes y no-administradores SOLO pueden consultar con el token público aleatorio (UUID)
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanParam);
-      if (isUuid) {
-        query = query.or(`public_token.eq.${cleanParam},id.eq.${cleanParam}`);
-      } else {
-        query = query.eq("public_token", cleanParam);
-      }
+      query = query.eq("public_token", cleanParam);
     }
 
     const { data: order, error } = await query.maybeSingle();
@@ -82,26 +76,67 @@ export async function GET(
       );
     }
 
-    // 4. Si el voucher es una ruta interna privada de Storage, firmar URL temporal
-    if (
-      order.voucher_url &&
-      !order.voucher_url.startsWith("http") &&
-      !order.voucher_url.startsWith("data:")
-    ) {
-      try {
-        const { data: signedData } = await supabase.storage
-          .from("payment-vouchers")
-          .createSignedUrl(order.voucher_url, 3600);
-        if (signedData?.signedUrl) {
-          order.voucher_url = signedData.signedUrl;
+    // 3. Determinar nivel de autorización:
+    // - Administrador autenticado
+    // - Token secreto coincidente (public_token / id)
+    // - O la URL misma fue el UUID no adivinable (enlace privado)
+    const isAuthorized =
+      isAdmin ||
+      (queryToken &&
+        (queryToken.toLowerCase() === (order.public_token || "").toLowerCase() ||
+          queryToken.toLowerCase() === (order.id || "").toLowerCase())) ||
+      !isSequentialOrder;
+
+    // 4. Si la consulta se hizo por número secuencial LAOBRA-XXXX sin token secreto ni sesión admin,
+    // se devuelven los datos del pedido y el ESTADO EN TIEMPO REAL, pero se protegen datos sensibles
+    // (números de teléfono privados, dirección exacta y carta dedicatoria) para evitar que terceros
+    // que adivinen números secuenciales espíen la privacidad de otros clientes.
+    if (!isAuthorized) {
+      if (order.buyer_phone) {
+        order.buyer_phone = maskPhone(order.buyer_phone);
+      }
+      if (order.recipient_phone) {
+        order.recipient_phone = maskPhone(order.recipient_phone);
+      }
+      if (order.delivery_address) {
+        const parts = order.delivery_address.split("—");
+        order.delivery_address =
+          parts.length > 1
+            ? `${parts[0].trim()} — [Dirección protegida por privacidad]`
+            : "Lima — [Dirección protegida por privacidad]";
+      }
+      order.delivery_reference = null;
+      if (order.dedication) {
+        order.dedication = "💌 [Mensaje personal privado para el destinatario]";
+        order.dedication_from = null;
+      }
+      order.voucher_url = null;
+    } else {
+      // 5. Usuario autorizado: si el voucher es una ruta interna de Storage, firmar URL
+      if (
+        order.voucher_url &&
+        !order.voucher_url.startsWith("http") &&
+        !order.voucher_url.startsWith("data:")
+      ) {
+        try {
+          const { data: signedData } = await supabase.storage
+            .from("payment-vouchers")
+            .createSignedUrl(order.voucher_url, 3600);
+          if (signedData?.signedUrl) {
+            order.voucher_url = signedData.signedUrl;
+          }
+        } catch {
+          // Ignorar si falla
         }
-      } catch {
-        // Ignorar si falla
       }
     }
 
     return NextResponse.json(
-      { success: true, order },
+      {
+        success: true,
+        order,
+        isAuthorized: Boolean(isAuthorized),
+      },
       {
         headers: {
           "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
