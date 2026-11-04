@@ -127,7 +127,7 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
   lujo: {
     id: "lujo",
     name: "Lujo",
-    subtitle: "Alta Costura Floral & Rarezas",
+    subtitle: "Alta Costura Floral",
     badge: "Colección Excepcional",
     description:
       "Flores importadas de exportación, orquídeas, anturios, tulipanes o calas oscuras con presentación de lujo de autor.",
