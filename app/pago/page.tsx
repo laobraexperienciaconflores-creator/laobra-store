@@ -10,8 +10,24 @@ type PaymentState = "aprobado" | "rechazado" | "pendiente" | null;
 function PaymentResultContent() {
   const searchParams = useSearchParams();
   const estado = searchParams.get("estado") as PaymentState;
-  const pedido = searchParams.get("pedido");
+  const pedido = searchParams.get("pedido"); // número secuencial LAOBRA-XXXX (solo para mostrar)
   const [dots, setDots] = useState(".");
+  const [boletaUrl, setBoletaUrl] = useState<string | null>(null);
+
+  // Recuperar el token privado del localStorage para construir el enlace seguro a la boleta
+  useEffect(() => {
+    if (!pedido) return;
+    try {
+      const token =
+        localStorage.getItem(`laobra_token_${pedido}`) ||
+        localStorage.getItem("laobra_last_order_token");
+      if (token) {
+        setBoletaUrl(`/orders/${encodeURIComponent(token)}`);
+      }
+    } catch {
+      // localStorage no disponible (SSR)
+    }
+  }, [pedido]);
 
   // Animación de puntos suspensivos para estado pendiente
   useEffect(() => {
@@ -85,9 +101,9 @@ function PaymentResultContent() {
             </p>
 
             <div className="space-y-3">
-              {pedido && (
+              {boletaUrl && (
                 <Link
-                  href={`/pedido/${pedido}`}
+                  href={boletaUrl}
                   className="block w-full py-3.5 text-xs uppercase tracking-[0.2em] font-medium bg-black text-white hover:bg-black/85 transition-colors text-center"
                 >
                   Ver boleta de compra
@@ -243,9 +259,9 @@ function PaymentResultContent() {
             </p>
 
             <div className="space-y-3">
-              {pedido && (
+              {boletaUrl && (
                 <Link
-                  href={`/pedido/${pedido}`}
+                  href={boletaUrl}
                   className="block w-full py-3.5 text-xs uppercase tracking-[0.2em] font-medium bg-black text-white hover:bg-black/85 transition-colors text-center"
                 >
                   Ver estado del pedido

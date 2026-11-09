@@ -3,12 +3,6 @@ import { createClient as createServerClient } from "@/app/lib/supabaseServer";
 import { getSupabaseAdmin } from "@/app/lib/supabaseAdmin";
 import { isAdminEmail } from "@/app/lib/adminAuth";
 
-function maskPhone(phone: string): string {
-  const clean = phone.trim();
-  if (clean.length <= 4) return "****";
-  return clean.slice(0, 3) + " *** " + clean.slice(-3);
-}
-
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ orderNumber: string }> }
@@ -27,13 +21,6 @@ export async function GET(
     const isSequentialOrder = cleanParam.toUpperCase().startsWith("LAOBRA-");
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanParam);
 
-    // Obtener token secreto si viene por parámetro de URL o cabecera
-    const url = new URL(request.url);
-    const queryToken =
-      url.searchParams.get("token")?.trim() ||
-      request.headers.get("x-order-token")?.trim() ||
-      "";
-
     // 1. Verificar si quien consulta es el Administrador de LA OBRA
     let isAdmin = false;
     try {
@@ -46,7 +33,21 @@ export async function GET(
       isAdmin = false;
     }
 
-    // 2. Conexión segura con privilegios administrativos en el servidor
+    // 2. PROTECCIÓN TOTAL: si el parámetro es un número secuencial (LAOBRA-XXXX)
+    // solo los administradores autenticados pueden consultarlo.
+    // Los clientes SOLO pueden ver su boleta a través del token privado único (UUID).
+    if (isSequentialOrder && !isAdmin) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Acceso restringido. Utiliza el enlace privado que recibiste al realizar tu compra.",
+        },
+        { status: 403 }
+      );
+    }
+
+    // 3. Conexión segura con privilegios administrativos en el servidor
     let supabase;
     try {
       supabase = getSupabaseAdmin();
@@ -59,11 +60,14 @@ export async function GET(
 
     let query = supabase.from("orders").select("*");
 
-    if (isSequentialOrder) {
+    if (isAdmin && isSequentialOrder) {
+      // Solo el admin puede buscar por LAOBRA-XXXX
       query = query.eq("order_number", cleanParam);
     } else if (isUuid) {
+      // Token privado: UUID que puede ser public_token o id
       query = query.or(`public_token.eq.${cleanParam},id.eq.${cleanParam}`);
     } else {
+      // Cualquier otro formato: buscar por public_token
       query = query.eq("public_token", cleanParam);
     }
 
@@ -76,67 +80,26 @@ export async function GET(
       );
     }
 
-    // 3. Determinar nivel de autorización:
-    // - Administrador autenticado
-    // - Token secreto coincidente (public_token / id)
-    // - O la URL misma fue el UUID no adivinable (enlace privado)
-    const isAuthorized =
-      isAdmin ||
-      (queryToken &&
-        (queryToken.toLowerCase() === (order.public_token || "").toLowerCase() ||
-          queryToken.toLowerCase() === (order.id || "").toLowerCase())) ||
-      !isSequentialOrder;
-
-    // 4. Si la consulta se hizo por número secuencial LAOBRA-XXXX sin token secreto ni sesión admin,
-    // se devuelven los datos del pedido y el ESTADO EN TIEMPO REAL, pero se protegen datos sensibles
-    // (números de teléfono privados, dirección exacta y carta dedicatoria) para evitar que terceros
-    // que adivinen números secuenciales espíen la privacidad de otros clientes.
-    if (!isAuthorized) {
-      if (order.buyer_phone) {
-        order.buyer_phone = maskPhone(order.buyer_phone);
-      }
-      if (order.recipient_phone) {
-        order.recipient_phone = maskPhone(order.recipient_phone);
-      }
-      if (order.delivery_address) {
-        const parts = order.delivery_address.split("—");
-        order.delivery_address =
-          parts.length > 1
-            ? `${parts[0].trim()} — [Dirección protegida por privacidad]`
-            : "Lima — [Dirección protegida por privacidad]";
-      }
-      order.delivery_reference = null;
-      if (order.dedication) {
-        order.dedication = "💌 [Mensaje personal privado para el destinatario]";
-        order.dedication_from = null;
-      }
-      order.voucher_url = null;
-    } else {
-      // 5. Usuario autorizado: si el voucher es una ruta interna de Storage, firmar URL
-      if (
-        order.voucher_url &&
-        !order.voucher_url.startsWith("http") &&
-        !order.voucher_url.startsWith("data:")
-      ) {
-        try {
-          const { data: signedData } = await supabase.storage
-            .from("payment-vouchers")
-            .createSignedUrl(order.voucher_url, 3600);
-          if (signedData?.signedUrl) {
-            order.voucher_url = signedData.signedUrl;
-          }
-        } catch {
-          // Ignorar si falla
+    // 4. Firmar URL del voucher si es ruta interna de Storage
+    if (
+      order.voucher_url &&
+      !order.voucher_url.startsWith("http") &&
+      !order.voucher_url.startsWith("data:")
+    ) {
+      try {
+        const { data: signedData } = await supabase.storage
+          .from("payment-vouchers")
+          .createSignedUrl(order.voucher_url, 3600);
+        if (signedData?.signedUrl) {
+          order.voucher_url = signedData.signedUrl;
         }
+      } catch {
+        // Ignorar si falla
       }
     }
 
     return NextResponse.json(
-      {
-        success: true,
-        order,
-        isAuthorized: Boolean(isAuthorized),
-      },
+      { success: true, order },
       {
         headers: {
           "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",

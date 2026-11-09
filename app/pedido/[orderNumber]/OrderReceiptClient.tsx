@@ -63,7 +63,19 @@ export default function OrderReceiptPage({
     if (!orderNumber && !initialOrder) return;
 
     async function fetchOrder() {
-      const target = initialOrder?.public_token || initialOrder?.order_number || orderNumber;
+      // Usar preferentemente el token privado (UUID) para la consulta.
+      // Si initialOrder ya viene con datos (desde /orders/[token]), usarlo directamente.
+      const privateToken =
+        initialOrder?.public_token ||
+        (typeof window !== "undefined"
+          ? localStorage.getItem(`laobra_token_${orderNumber}`) ||
+            localStorage.getItem("laobra_last_order_token")
+          : null) ||
+        "";
+
+      // Si tenemos el token privado, consultamos directamente con él (UUID).
+      // Si no (por ejemplo admin usando LAOBRA-XXXX), usamos el orderNumber directamente.
+      const target = privateToken || orderNumber;
       if (!target) return;
 
       try {
@@ -71,28 +83,19 @@ export default function OrderReceiptPage({
           setLoading(true);
         }
 
-        const storedToken =
-          (typeof window !== "undefined" &&
-            (localStorage.getItem(`laobra_token_${target}`) ||
-              localStorage.getItem(`laobra_token_${orderNumber}`) ||
-              localStorage.getItem("laobra_last_order_token"))) ||
-          initialOrder?.public_token ||
-          "";
-
-        const url = storedToken
-          ? `/api/orders/${encodeURIComponent(target)}?token=${encodeURIComponent(storedToken)}`
-          : `/api/orders/${encodeURIComponent(target)}`;
-
-        const res = await fetch(url, { cache: "no-store" });
+        const res = await fetch(`/api/orders/${encodeURIComponent(target)}`, { cache: "no-store" });
         const data = await res.json();
 
         if (data.success && data.order) {
           setOrder(data.order);
           try {
-            if (data.order.public_token) {
+            if (data.order.public_token && data.order.order_number) {
               localStorage.setItem(`laobra_token_${data.order.order_number}`, data.order.public_token);
+              localStorage.setItem("laobra_last_order_token", data.order.public_token);
             }
-            localStorage.setItem(`laobra_order_${data.order.order_number}`, JSON.stringify(data.order));
+            if (data.order.order_number) {
+              localStorage.setItem(`laobra_order_${data.order.order_number}`, JSON.stringify(data.order));
+            }
           } catch {}
         } else if (!initialOrder) {
           // Intentar rescatar de localStorage si se acaba de crear en la sesión
@@ -118,27 +121,24 @@ export default function OrderReceiptPage({
 
   // Actualización en tiempo real: polling cada 4s y refresco instantáneo al enfocar pestaña
   useEffect(() => {
-    const targetParam = initialOrder?.public_token || order?.public_token || initialOrder?.order_number || orderNumber;
+    // Siempre usar el token privado para el polling — nunca el número secuencial
+    const privateToken =
+      order?.public_token ||
+      initialOrder?.public_token ||
+      (typeof window !== "undefined"
+        ? localStorage.getItem(`laobra_token_${orderNumber}`) ||
+          localStorage.getItem("laobra_last_order_token")
+        : null) ||
+      "";
+
+    const targetParam = privateToken || (initialOrder ? initialOrder.order_number : null);
     if (!targetParam) return;
 
     let isMounted = true;
 
     async function checkFreshStatus() {
       try {
-        const storedToken =
-          order?.public_token ||
-          initialOrder?.public_token ||
-          (typeof window !== "undefined"
-            ? localStorage.getItem(`laobra_token_${orderNumber}`) ||
-              localStorage.getItem("laobra_last_order_token")
-            : null) ||
-          "";
-
-        const url = storedToken
-          ? `/api/orders/${encodeURIComponent(targetParam)}?token=${encodeURIComponent(storedToken)}`
-          : `/api/orders/${encodeURIComponent(targetParam)}`;
-
-        const res = await fetch(url, { cache: "no-store" });
+        const res = await fetch(`/api/orders/${encodeURIComponent(targetParam!)}`, { cache: "no-store" });
         const data = await res.json();
 
         if (isMounted && data.success && data.order) {
@@ -171,15 +171,12 @@ export default function OrderReceiptPage({
     const interval = setInterval(checkFreshStatus, 4000);
 
     // Refresco inmediato al hacer foco en la pestaña
-    const handleFocus = () => {
-      checkFreshStatus();
-    };
-    window.addEventListener("focus", handleFocus);
+    window.addEventListener("focus", checkFreshStatus);
 
     return () => {
       isMounted = false;
       clearInterval(interval);
-      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("focus", checkFreshStatus);
     };
   }, [orderNumber, initialOrder, order?.public_token]);
 

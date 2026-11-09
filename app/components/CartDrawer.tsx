@@ -372,7 +372,6 @@ export default function CartDrawer() {
     setMpError(null);
 
     try {
-      // 1. Registrar el pedido en Supabase
       const orderRes = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -389,6 +388,15 @@ export default function CartDrawer() {
       });
       const orderData = await orderRes.json();
       const orderNumber = orderData?.orderNumber || "LAOBRA-0001";
+      const publicToken = orderData?.publicToken || "";
+
+      // Guardar el token privado en localStorage antes de redirigir a MercadoPago
+      if (publicToken && orderNumber) {
+        try {
+          localStorage.setItem(`laobra_token_${orderNumber}`, publicToken);
+          localStorage.setItem("laobra_last_order_token", publicToken);
+        } catch {}
+      }
 
       // 2. Crear preferencia de pago en Mercado Pago
       const mpRes = await fetch("/api/mercadopago/create-preference", {
@@ -397,9 +405,10 @@ export default function CartDrawer() {
         body: JSON.stringify({
           items,
           orderNumber,
+          publicToken: orderData?.publicToken || "",
           buyerName: orderDetails.buyerName.trim(),
           buyerEmail: "cliente@laobra.pe",
-          orderDetails, // para pre-rellenar datos en MP
+          orderDetails,
         }),
       });
       const mpData = await mpRes.json();
@@ -420,6 +429,14 @@ export default function CartDrawer() {
           : (mpData.sandbox_init_point || mpData.init_point);
 
       if (redirectUrl) {
+        // Guardar el token privado en localStorage antes de redirigir a MercadoPago
+        const mpPublicToken = orderData?.publicToken || "";
+        if (mpPublicToken && orderNumber) {
+          try {
+            localStorage.setItem(`laobra_token_${orderNumber}`, mpPublicToken);
+            localStorage.setItem("laobra_last_order_token", mpPublicToken);
+          } catch {}
+        }
         if (discountAmount > 0 || appliedCoupon) {
           markFirstDiscountAsUsed();
         }

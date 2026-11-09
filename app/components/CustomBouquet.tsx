@@ -16,6 +16,10 @@ export interface SizeConfig {
   maxPrice: number;
   defaultPrice: number;
   description: string;
+  /** Imagen referencial de la talla dentro de esta categoría */
+  imageUrl: string;
+  /** Flores / elementos típicos incluidos en esta talla */
+  flowers: string[];
 }
 
 export interface CategoryConfig {
@@ -46,6 +50,8 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         maxPrice: 85,
         defaultPrice: 65,
         description: "Detalle íntimo y delicado, perfecto para un gesto espontáneo.",
+        imageUrl: "/products/niebla.jpg",
+        flowers: ["5–7 rosas de temporada", "2–3 flores de relleno", "Follaje eucalipto", "Envoltura artesanal"],
       },
       M: {
         size: "M",
@@ -55,6 +61,8 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         maxPrice: 135,
         defaultPrice: 115,
         description: "Tamaño ideal para cumpleaños o felicitaciones, muy vistoso.",
+        imageUrl: "/products/bruma.jpg",
+        flowers: ["10–12 rosas mixtas", "4–5 flores silvestres", "Follaje + gypsophila", "Papel kraft + cinta"],
       },
       L: {
         size: "L",
@@ -64,6 +72,8 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         maxPrice: 205,
         defaultPrice: 175,
         description: "Abundancia floral con variedad de especies y follajes selectos.",
+        imageUrl: "/products/lumbre.jpg",
+        flowers: ["15–18 rosas premium", "6–8 flores mixtas", "Follaje tropical", "Caja o papel de lujo"],
       },
       XL: {
         size: "XL",
@@ -73,6 +83,8 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         maxPrice: 290,
         defaultPrice: 250,
         description: "Ramo de gran volumen e impacto, memorable y protagónico.",
+        imageUrl: "/products/carmesí.jpg",
+        flowers: ["20+ rosas selectas", "10+ flores premium", "Follaje exótico", "Envoltura exclusiva + caja"],
       },
     },
   },
@@ -93,6 +105,8 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         maxPrice: 130,
         defaultPrice: 110,
         description: "Pieza de diseño boutique con flores de alta gama.",
+        imageUrl: "/products/niebla.jpg",
+        flowers: ["5–6 rosas garden o ranúnculos", "Limonium o alstroemeria", "Follaje aromático", "Envoltura premium"],
       },
       M: {
         size: "M",
@@ -102,6 +116,8 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         maxPrice: 190,
         defaultPrice: 160,
         description: "Equilibrio estético superior, flores protagonistas y acentos elegantes.",
+        imageUrl: "/products/vela.jpg",
+        flowers: ["10 rosas garden + peonías", "Flores silvestres selectas", "Follaje con caída", "Papel de seda + lazo"],
       },
       L: {
         size: "L",
@@ -111,6 +127,8 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         maxPrice: 295,
         defaultPrice: 245,
         description: "Composición de autor exuberante, dramática y sofisticada.",
+        imageUrl: "/products/lumbre.jpg",
+        flowers: ["15+ rosas premium", "Peonías o lisianthus", "Follaje tropical + botánica", "Caja de lujo exclusiva"],
       },
       XL: {
         size: "XL",
@@ -120,6 +138,8 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         maxPrice: 390,
         defaultPrice: 340,
         description: "Obra floral monumental con tallos exclusivos y envoltura de lino.",
+        imageUrl: "/products/silencio.jpg",
+        flowers: ["20+ rosas de jardín", "Peonías + ranúnculos + lisianthus", "Follaje exótico en capas", "Envoltura de lino artesanal"],
       },
     },
   },
@@ -140,6 +160,8 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         maxPrice: 210,
         defaultPrice: 160,
         description: "Arreglo joya con especies raras y presentación de lujo absoluto.",
+        imageUrl: "/products/carmesí.jpg",
+        flowers: ["Orquídeas o calas selectas", "Rosas de exportación", "Envase de cristal o caja negra", "Tarjeta caligráfica"],
       },
       M: {
         size: "M",
@@ -149,6 +171,8 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         maxPrice: 285,
         defaultPrice: 215,
         description: "Presencia escultural con orquídeas o flores de colección.",
+        imageUrl: "/products/silencio.jpg",
+        flowers: ["Orquídeas Cymbidium o Phalaenopsis", "Anturios + rosas negras", "Follaje silvestre premium", "Caja de lujo forrada"],
       },
       L: {
         size: "L",
@@ -158,6 +182,8 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         maxPrice: 400,
         defaultPrice: 290,
         description: "Espectacular despliegue de alta floristería con volumen opulento.",
+        imageUrl: "/products/vela.jpg",
+        flowers: ["Orquídeas + tulipanes importados", "Calas + anturios exóticos", "Follaje tropical de lujo", "Presentación en caja premium"],
       },
       XL: {
         size: "XL",
@@ -167,6 +193,8 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         maxPrice: 600,
         defaultPrice: 410,
         description: "Máxima expresión del arte floral. Impacto visual extraordinario e inolvidable.",
+        imageUrl: "/products/carmesí.jpg",
+        flowers: ["Orquídeas importadas + calas negras", "Flores de colección exclusivas", "Envoltura couture artesanal", "Caja archivadora + tarjeta dorada"],
       },
     },
   },
@@ -757,10 +785,10 @@ export default function CustomBouquet() {
                   />
                 ) : (
                   <Image
-                    src={categoryConfig.imageUrl}
-                    alt={`Ramo ${categoryConfig.name}`}
+                    src={sizeConfig.imageUrl}
+                    alt={`Ramo ${categoryConfig.name} · Talla ${size}`}
                     fill
-                    className="object-cover transition-transform duration-700 hover:scale-105"
+                    className="object-cover transition-all duration-500 hover:scale-105"
                     sizes="(max-width: 1024px) 100vw, 40vw"
                   />
                 )}
@@ -796,6 +824,21 @@ export default function CustomBouquet() {
                   <p className="text-xs text-[#6B6560] mt-1 leading-relaxed">
                     {sizeConfig.description}
                   </p>
+                </div>
+
+                {/* Lista de flores incluidas en esta talla */}
+                <div className="p-3 bg-[#FDF8F3] border border-[#E8CEAD] rounded-xl">
+                  <p className="text-[10px] uppercase tracking-widest text-[#B8924A] font-semibold mb-2">
+                    🌸 Incluye esta talla
+                  </p>
+                  <ul className="space-y-1">
+                    {sizeConfig.flowers.map((flower, i) => (
+                      <li key={i} className="text-xs text-[#3A3530] flex items-start gap-1.5">
+                        <span className="text-[#B8924A] mt-0.5 leading-none">·</span>
+                        <span>{flower}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
 
                 {/* Ficha de especificaciones */}

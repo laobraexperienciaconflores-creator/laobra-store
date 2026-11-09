@@ -1,32 +1,30 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
 import { useCart } from '../context/CartContext';
 
 const COUPON_CODE = 'LAOBRA01';
 const DISCOUNT_PERCENTAGE = '15%';
 
 export default function PromoModal() {
-  const pathname = usePathname();
-  // La promo ÚNICAMENTE debe mostrarse en la página raíz ("/")
-  // Jamás en /pedido, /orders, /admin ni ninguna subpágina
-  const isBrowserHome = typeof window === "undefined" || window.location.pathname === "/";
-  const isHomePage = (pathname === "/" || pathname === "") && isBrowserHome;
-
   const { applyCoupon, appliedCoupon, isFirstDiscountUsed } = useCart();
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isExitIntent, setIsExitIntent] = useState(false);
   const [exitIntentFired, setExitIntentFired] = useState(false);
+  // null = aún no sabemos (SSR), true/false = resultado del cliente
+  const [isHomePage, setIsHomePage] = useState<boolean | null>(null);
 
-  // Bloquear de inmediato si no es exactamente la página principal o si ya se usó el descuento
+  // Determinar si estamos en "/" SOLO en el cliente (evita bug SSR)
+  useEffect(() => {
+    setIsHomePage(window.location.pathname === "/");
+  }, []);
+
   const isBlocked =
-    !isHomePage ||
+    isHomePage !== true ||
     isFirstDiscountUsed ||
     (typeof window !== "undefined" &&
-      (window.location.pathname !== "/" ||
-        localStorage.getItem("laobra_first_discount_used") === "true"));
+      localStorage.getItem("laobra_first_discount_used") === "true");
 
   const isAlreadyClaimed = Boolean(appliedCoupon && appliedCoupon.code === COUPON_CODE);
 
@@ -63,8 +61,8 @@ export default function PromoModal() {
     return () => document.removeEventListener('mouseleave', handleMouseLeave);
   }, [exitIntentFired, isBlocked]);
 
-  // Si no estamos en la página principal o ya se usó el descuento, no renderizar nada
-  if (isBlocked) {
+  // No renderizar nada hasta confirmar en cliente; y nada si está bloqueado
+  if (isHomePage === null || isBlocked) {
     return null;
   }
 
