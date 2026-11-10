@@ -775,25 +775,43 @@ export default function CustomBouquet() {
           {/* Columna Derecha: Vista previa, resumen y botones de acción (5 cols) */}
           <div className="lg:col-span-5 sticky top-28 space-y-6">
             <div className="bg-white rounded-2xl overflow-hidden border border-[#E8CEAD] shadow-xl">
-              {/* Imagen de la categoría o foto de referencia con badge (tamaño compacto y proporcionado) */}
-              <div className="relative h-44 sm:h-52 w-full bg-[#FAF3EC] overflow-hidden">
+              {/* Imagen referencial completa sin recortes (object-contain + ambient blur) */}
+              <div className="relative h-60 sm:h-72 w-full bg-[#FAF3EC] overflow-hidden flex items-center justify-center">
+                {/* Fondo difuminado ambiental con los tonos florales para que se vea sofisticado */}
+                <div className="absolute inset-0 overflow-hidden opacity-25 filter blur-xl scale-125 pointer-events-none">
+                  <Image
+                    src={referenceImage || sizeConfig.imageUrl}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    aria-hidden="true"
+                    unoptimized={Boolean(referenceImage)}
+                  />
+                </div>
+
+                {/* Ramo referencial completo sin perder ningún detalle ni flores */}
                 {referenceImage ? (
                   <img
                     src={referenceImage}
                     alt="Ramo de referencia del cliente"
-                    className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                    className="relative z-1 max-h-full max-w-full object-contain p-3 drop-shadow-md transition-transform duration-500 hover:scale-105"
                   />
                 ) : (
-                  <Image
-                    src={sizeConfig.imageUrl}
-                    alt={`Ramo ${categoryConfig.name} · Talla ${size}`}
-                    fill
-                    className="object-cover object-center transition-all duration-500 hover:scale-105"
-                    sizes="(max-width: 1024px) 100vw, 40vw"
-                  />
+                  <div className="relative z-1 w-full h-full p-2 flex items-center justify-center">
+                    <Image
+                      src={sizeConfig.imageUrl}
+                      alt={`Ramo ${categoryConfig.name} · Talla ${size}`}
+                      fill
+                      className="object-contain p-2 drop-shadow-md transition-transform duration-500 hover:scale-105"
+                      sizes="(max-width: 1024px) 100vw, 40vw"
+                      priority
+                    />
+                  </div>
                 )}
-                <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
-                  <span className="px-2.5 py-1 bg-black/90 backdrop-blur-xs text-[#F3E2CE] text-[10px] uppercase tracking-widest font-medium rounded-full shadow-md">
+
+                {/* Badges superiores */}
+                <div className="absolute top-3 left-3 z-10 flex flex-col gap-1 pointer-events-none">
+                  <span className="px-2.5 py-1 bg-black/85 backdrop-blur-md text-[#F3E2CE] text-[10px] uppercase tracking-widest font-medium rounded-full shadow-md">
                     {categoryConfig.name} · {sizeConfig.name}
                   </span>
                   {referenceImage && (
@@ -806,6 +824,13 @@ export default function CustomBouquet() {
                       Envío Gratis
                     </span>
                   )}
+                </div>
+
+                {/* Indicador inferior de vista completa */}
+                <div className="absolute bottom-2.5 right-3 z-10 pointer-events-none">
+                  <span className="px-2 py-0.5 bg-white/85 backdrop-blur-md text-[#3A3530] text-[9px] uppercase tracking-wider font-medium rounded-full shadow-xs border border-[#E8CEAD]/60">
+                    Vista completa
+                  </span>
                 </div>
               </div>
 
