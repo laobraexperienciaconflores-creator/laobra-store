@@ -509,7 +509,7 @@ export default function CustomBouquet() {
                           }`}
                       >
                         {sCfg.badge}
-                      </span>S
+                      </span>
                     </button>
                   );
                 })}
@@ -775,8 +775,8 @@ export default function CustomBouquet() {
           {/* Columna Derecha: Vista previa, resumen y botones de acción (5 cols) */}
           <div className="lg:col-span-5 sticky top-28 space-y-6">
             <div className="bg-white rounded-2xl overflow-hidden border border-[#E8CEAD] shadow-xl">
-              {/* Imagen de la categoría o foto de referencia con badge */}
-              <div className="relative aspect-[4/3] bg-[#E8CEAD] overflow-hidden">
+              {/* Imagen de la categoría o foto de referencia con badge (tamaño compacto y proporcionado) */}
+              <div className="relative h-44 sm:h-52 w-full bg-[#FAF3EC] overflow-hidden">
                 {referenceImage ? (
                   <img
                     src={referenceImage}
@@ -788,21 +788,21 @@ export default function CustomBouquet() {
                     src={sizeConfig.imageUrl}
                     alt={`Ramo ${categoryConfig.name} · Talla ${size}`}
                     fill
-                    className="object-cover transition-all duration-500 hover:scale-105"
+                    className="object-cover object-center transition-all duration-500 hover:scale-105"
                     sizes="(max-width: 1024px) 100vw, 40vw"
                   />
                 )}
-                <div className="absolute top-4 left-4 z-10 flex flex-col gap-1">
-                  <span className="px-3 py-1 bg-black text-[#F3E2CE] text-[10px] uppercase tracking-widest font-medium rounded-full shadow-md">
+                <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
+                  <span className="px-2.5 py-1 bg-black/90 backdrop-blur-xs text-[#F3E2CE] text-[10px] uppercase tracking-widest font-medium rounded-full shadow-md">
                     {categoryConfig.name} · {sizeConfig.name}
                   </span>
                   {referenceImage && (
-                    <span className="px-3 py-1 bg-[#B8924A] text-white text-[10px] uppercase tracking-widest font-semibold rounded-full shadow-md">
+                    <span className="px-2.5 py-1 bg-[#B8924A] text-white text-[10px] uppercase tracking-widest font-semibold rounded-full shadow-md">
                       📸 Foto de referencia
                     </span>
                   )}
                   {isFreeDeliveryEligible && (
-                    <span className="px-3 py-1 bg-[#4A6B53] text-white text-[10px] uppercase tracking-widest font-semibold rounded-full shadow-md">
+                    <span className="px-2.5 py-1 bg-[#4A6B53] text-white text-[10px] uppercase tracking-widest font-semibold rounded-full shadow-md">
                       Envío Gratis
                     </span>
                   )}
@@ -810,7 +810,7 @@ export default function CustomBouquet() {
               </div>
 
               {/* Resumen del Ramo Configurado */}
-              <div className="p-6 space-y-4">
+              <div className="p-5 space-y-3.5">
                 <div>
                   <span className="text-[10px] uppercase font-semibold text-[#6B6560] tracking-widest block mb-1">
                     Tu composición a medida
