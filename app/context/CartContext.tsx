@@ -13,6 +13,7 @@ export interface CartItem {
   price: number;
   imageUrl: string;
   quantity: number;
+  referenceImage?: string;
 }
 
 export interface Coupon {
@@ -70,7 +71,7 @@ interface CartContextType {
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
-  addItem: (product: { id: string; name: string; price: number; imageUrl: string }) => void;
+  addItem: (product: { id: string; name: string; price: number; imageUrl: string; referenceImage?: string }) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, delta: number) => void;
   clearCart: () => void;
@@ -192,7 +193,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const closeCart = () => setIsOpen(false);
   const toggleCart = () => setIsOpen((prev) => !prev);
 
-  const addItem = (product: { id: string; name: string; price: number; imageUrl: string }) => {
+  const addItem = (product: { id: string; name: string; price: number; imageUrl: string; referenceImage?: string }) => {
     setItems((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {

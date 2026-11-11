@@ -46,9 +46,10 @@ export async function PATCH(
     const { id } = await params;
     const admin = getSupabaseAdmin();
 
-    const orderStatus = body.paymentStatus === "verificado" ? "confirmado" : "rechazado";
+    const orderStatus = body.paymentStatus === "verificado" ? "confirmado" : "cancelado";
 
-    const { data: order, error } = await admin
+    // 1. Intentar actualizar payment_status y status de la orden
+    let { data: order, error } = await admin
         .from("orders")
         .update({
             payment_status: body.paymentStatus,
@@ -58,11 +59,26 @@ export async function PATCH(
         .select("id, order_number, payment_status, status, public_token")
         .maybeSingle();
 
+    // 2. Si falla (por ejemplo por restricción CHECK en status), actualizar solo payment_status
+    if (error) {
+        console.warn("Fallo actualizando con status, reintentando solo payment_status:", error.message);
+        const retry = await admin
+            .from("orders")
+            .update({
+                payment_status: body.paymentStatus,
+            })
+            .eq("id", id)
+            .select("id, order_number, payment_status, status, public_token")
+            .maybeSingle();
+        order = retry.data;
+        error = retry.error;
+    }
+
     if (error) {
         console.error("Error actualizando pago:", error.message);
 
         return NextResponse.json(
-            { error: "No se pudo actualizar el pago." },
+            { error: `No se pudo actualizar el pago: ${error.message}` },
             { status: 500 }
         );
     }

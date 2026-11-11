@@ -82,5 +82,23 @@ export default async function OrderPage({ params }: OrderPageProps) {
         }
     }
 
+    // Firmar imágenes de referencia en los items si tienen ruta de Storage
+    if (Array.isArray(order.items)) {
+        for (const item of order.items) {
+            const ref = item.referenceImage || (item.imageUrl?.startsWith("references/") ? item.imageUrl : null);
+            if (ref && !ref.startsWith("http") && !ref.startsWith("data:")) {
+                try {
+                    const { data: signedRef } = await supabase.storage
+                        .from("payment-vouchers")
+                        .createSignedUrl(ref, 3600);
+                    if (signedRef?.signedUrl) {
+                        item.referenceImage = signedRef.signedUrl;
+                        if (item.imageUrl === ref) item.imageUrl = signedRef.signedUrl;
+                    }
+                } catch {}
+            }
+        }
+    }
+
     return <OrderReceiptClient initialOrder={order as OrderData} />;
 }

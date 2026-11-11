@@ -170,6 +170,89 @@ export async function POST(request: Request) {
         ? `${district} — ${rawAddress}`
         : rawAddress;
 
+    // Procesar y guardar imágenes de referencia en Supabase Storage
+    const processedItems = await Promise.all(
+      items.map(
+        async (
+          item: {
+            id: string;
+            name: string;
+            price: number;
+            quantity: number;
+            imageUrl?: string;
+            referenceImage?: string;
+          },
+          index: number
+        ) => {
+          let referenceImageUrl =
+            item.referenceImage ||
+            (item.imageUrl?.startsWith("data:") ? item.imageUrl : null);
+          let finalImageUrl = item.imageUrl;
+
+          if (
+            referenceImageUrl &&
+            referenceImageUrl.startsWith("data:") &&
+            supabase
+          ) {
+            try {
+              const match = referenceImageUrl.match(
+                /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]*={0,2})$/
+              );
+              if (match) {
+                const mimeType = match[1] as AllowedMime;
+                const buffer = Buffer.from(match[2], "base64");
+                const ext = ALLOWED_TYPES[mimeType] || "jpg";
+                const refFilePath = `references/${randomUUID()}.${ext}`;
+
+                const { error: refUploadError } = await supabase.storage
+                  .from(BUCKET)
+                  .upload(refFilePath, buffer, {
+                    contentType: mimeType,
+                    upsert: false,
+                  });
+
+                if (!refUploadError) {
+                  const { data: signedData } = await supabase.storage
+                    .from(BUCKET)
+                    .createSignedUrl(refFilePath, 60 * 60 * 24 * 365); // 1 año
+
+                  const permanentUrl = signedData?.signedUrl || refFilePath;
+                  referenceImageUrl = permanentUrl;
+                  if (finalImageUrl?.startsWith("data:")) {
+                    finalImageUrl = permanentUrl;
+                  }
+                }
+              }
+            } catch (e) {
+              console.error("Error al guardar imagen de referencia en Supabase:", e);
+            }
+          }
+
+          return {
+            id: item.id,
+            name: item.name,
+            price: Number(item.price),
+            quantity: Number(item.quantity),
+            imageUrl: finalImageUrl,
+            referenceImage: referenceImageUrl || null,
+            ...(index === 0
+              ? {
+                  discountAmount: Number(discountAmount) || 0,
+                  couponCode:
+                    appliedCoupon?.code ||
+                    (Number(discountAmount) > 0 ? "LAOBRA01" : null),
+                  discountPercentage:
+                    appliedCoupon?.discountPercentage ||
+                    (Number(discountAmount) > 0 ? 15 : 0),
+                  deliveryCost: Number(deliveryCost) || 0,
+                  itemsSubtotal: Number(subtotal) || 0,
+                }
+              : {}),
+          };
+        }
+      )
+    );
+
     const { data, error } = await supabase
       .from("orders")
       .insert([
@@ -190,28 +273,7 @@ export async function POST(request: Request) {
           payment_status: initialPaymentStatus,
           operation_number: operationNumber?.trim() || null,
           voucher_url: voucherPath,
-          items: items.map((item: {
-            id: string;
-            name: string;
-            price: number;
-            quantity: number;
-            imageUrl?: string;
-          }, index: number) => ({
-            id: item.id,
-            name: item.name,
-            price: Number(item.price),
-            quantity: Number(item.quantity),
-            imageUrl: item.imageUrl,
-            ...(index === 0
-              ? {
-                  discountAmount: Number(discountAmount) || 0,
-                  couponCode: appliedCoupon?.code || (Number(discountAmount) > 0 ? "LAOBRA01" : null),
-                  discountPercentage: appliedCoupon?.discountPercentage || (Number(discountAmount) > 0 ? 15 : 0),
-                  deliveryCost: Number(deliveryCost) || 0,
-                  itemsSubtotal: Number(subtotal) || 0,
-                }
-              : {}),
-          })),
+          items: processedItems,
           status: "pendiente",
         },
       ])

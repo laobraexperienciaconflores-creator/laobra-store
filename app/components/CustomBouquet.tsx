@@ -4,6 +4,7 @@ import { useState, useId, useRef } from "react";
 import Image from "next/image";
 import { useCart } from "../context/CartContext";
 import { FREE_DELIVERY_THRESHOLD } from "../lib/delivery";
+import { WHATSAPP_NUMBER } from "../lib/constants";
 
 export type BouquetCategory = "estandar" | "exclusivo" | "lujo";
 export type BouquetSize = "S" | "M" | "L" | "XL";
@@ -12,6 +13,8 @@ export interface SizeConfig {
   size: BouquetSize;
   name: string;
   badge: string;
+  /** Medidas aproximadas del ramo (alto x diámetro) */
+  dimensions: string;
   minPrice: number;
   maxPrice: number;
   defaultPrice: number;
@@ -46,6 +49,7 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         size: "S",
         name: "Pequeño (S)",
         badge: "55 – 85 soles",
+        dimensions: "30 – 35 cm alto × 25 cm ø",
         minPrice: 55,
         maxPrice: 85,
         defaultPrice: 65,
@@ -57,6 +61,7 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         size: "M",
         name: "Mediano (M)",
         badge: "95 – 135 soles",
+        dimensions: "40 – 45 cm alto × 35 cm ø",
         minPrice: 95,
         maxPrice: 135,
         defaultPrice: 115,
@@ -68,6 +73,7 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         size: "L",
         name: "Grande (L)",
         badge: "145 – 205 soles",
+        dimensions: "50 – 55 cm alto × 45 cm ø",
         minPrice: 145,
         maxPrice: 205,
         defaultPrice: 175,
@@ -79,6 +85,7 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         size: "XL",
         name: "Extra Grande (XL)",
         badge: "220 – 290 soles",
+        dimensions: "60 – 70 cm alto × 55 cm ø",
         minPrice: 220,
         maxPrice: 290,
         defaultPrice: 250,
@@ -101,6 +108,7 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         size: "S",
         name: "Pequeño (S)",
         badge: "100 – 130 soles",
+        dimensions: "30 – 35 cm alto × 25 cm ø",
         minPrice: 100,
         maxPrice: 130,
         defaultPrice: 110,
@@ -112,6 +120,7 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         size: "M",
         name: "Mediano (M)",
         badge: "150 – 190 soles",
+        dimensions: "40 – 45 cm alto × 35 cm ø",
         minPrice: 150,
         maxPrice: 190,
         defaultPrice: 160,
@@ -123,6 +132,7 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         size: "L",
         name: "Grande (L)",
         badge: "200 – 295 soles",
+        dimensions: "50 – 55 cm alto × 45 cm ø",
         minPrice: 200,
         maxPrice: 295,
         defaultPrice: 245,
@@ -134,6 +144,7 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         size: "XL",
         name: "Extra Grande (XL)",
         badge: "310 – 390 soles",
+        dimensions: "60 – 70 cm alto × 55 cm ø",
         minPrice: 310,
         maxPrice: 390,
         defaultPrice: 340,
@@ -156,6 +167,7 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         size: "S",
         name: "Pequeño (S)",
         badge: "Desde 160 soles",
+        dimensions: "30 – 35 cm alto × 25 cm ø",
         minPrice: 160,
         maxPrice: 210,
         defaultPrice: 160,
@@ -167,6 +179,7 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         size: "M",
         name: "Mediano (M)",
         badge: "Desde 215 soles",
+        dimensions: "40 – 45 cm alto × 35 cm ø",
         minPrice: 215,
         maxPrice: 285,
         defaultPrice: 215,
@@ -178,6 +191,7 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         size: "L",
         name: "Grande (L)",
         badge: "Desde 290 soles",
+        dimensions: "50 – 55 cm alto × 45 cm ø",
         minPrice: 290,
         maxPrice: 400,
         defaultPrice: 290,
@@ -189,6 +203,7 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
         size: "XL",
         name: "Extra Grande (XL)",
         badge: "Desde 410 soles",
+        dimensions: "60 – 70 cm alto × 55 cm ø",
         minPrice: 410,
         maxPrice: 600,
         defaultPrice: 410,
@@ -198,6 +213,13 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
       },
     },
   },
+};
+
+const SILHOUETTE_COLORS: Record<BouquetSize, { bg: string; border: string }> = {
+  S: { bg: "#F0D8BB", border: "#DFC09D" },
+  M: { bg: "#F4DEC2", border: "#E5CCA9" },
+  L: { bg: "#F4DFC6", border: "#E6CEAD" },
+  XL: { bg: "#F4DDC3", border: "#E5CBAB" },
 };
 
 const COLOR_PRESETS = [
@@ -241,13 +263,17 @@ const COLOR_PRESETS = [
 
 const INDIVIDUAL_COLORS = [
   { name: "Blanco", color: "#FFFFFF", border: true },
+  { name: "Rosado", color: "#EC407A" },
   { name: "Rosa Pastel", color: "#F48FB1" },
   { name: "Fucsia", color: "#D81B60" },
   { name: "Rojo Vino", color: "#880E4F" },
+  { name: "Morado", color: "#6A1B9A" },
+  { name: "Lila / Violeta", color: "#CE93D8" },
+  { name: "Naranja", color: "#FB8C00" },
   { name: "Durazno", color: "#FFAB91" },
   { name: "Amarillo", color: "#FFE082" },
-  { name: "Lila / Violeta", color: "#CE93D8" },
-  { name: "Azul / Hortensia", color: "#90CAF9" },
+  { name: "Azul", color: "#90CAF9" },
+  { name: "Negro", color: "#1A1A1A" },
   { name: "Follaje Verde", color: "#81C784" },
 ];
 
@@ -351,7 +377,7 @@ export default function CustomBouquet() {
       else if (presetId === "calido") setSelectedColors(["Durazno", "Amarillo"]);
       else if (presetId === "sereno") setSelectedColors(["Blanco", "Follaje Verde"]);
       else if (presetId === "pasion") setSelectedColors(["Rojo Vino", "Fucsia"]);
-      else if (presetId === "mistico") setSelectedColors(["Lila / Violeta", "Azul / Hortensia"]);
+      else if (presetId === "mistico") setSelectedColors(["Lila / Violeta", "Azul"]);
     }
   };
 
@@ -376,15 +402,15 @@ export default function CustomBouquet() {
 
   const handleAddToCart = () => {
     const customId = `custom-${category}-${size}-${price}-${Date.now()}`;
-    const customName = `Ramo Personalizado · ${categoryConfig.name} (${size}) [${colorSummary}]${
-      referenceImage ? " 📸 (Con referencia)" : ""
-    }`;
+    const customName = `Ramo Personalizado · ${categoryConfig.name} (${size} · ${sizeConfig.dimensions}) [${colorSummary}]${referenceImage ? " 📸 (Con referencia)" : ""
+      }`;
 
     addItem({
       id: customId,
       name: customName,
       price: price,
       imageUrl: referenceImage || categoryConfig.imageUrl,
+      referenceImage: referenceImage || undefined,
     });
 
     setIsAdded(true);
@@ -392,6 +418,25 @@ export default function CustomBouquet() {
       setIsAdded(false);
       openCart();
     }, 800);
+  };
+
+  const handleWhatsAppConsult = () => {
+    let msg = `¡Hola LA OBRA! 🌸 Quisiera consultar por este Ramo Personalizado:\n\n`;
+    msg += `• Categoría: ${categoryConfig.name} (${categoryConfig.subtitle})\n`;
+    msg += `• Talla: ${sizeConfig.name} (${sizeConfig.dimensions})\n`;
+    msg += `• Flores de la talla: ${sizeConfig.flowers.join(", ")}\n`;
+    msg += `• Paleta de color: ${colorSummary}\n`;
+    msg += `• Presupuesto seleccionado: S/ ${price}.00\n`;
+    if (referenceImage) {
+      msg += `• 📸 Adjuntaré mi foto de referencia en este chat.\n`;
+    }
+    msg += `\n¿Tienen disponibilidad para prepararlo y coordinar la entrega?`;
+
+    window.open(
+      `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
   };
 
   return (
@@ -483,7 +528,7 @@ export default function CustomBouquet() {
                   Talla del arreglo
                 </span>
                 <span className="text-[11px] text-[#6B6560]">
-                  Rango: <strong>{sizeConfig.badge}</strong>
+                  Medidas aprox.: <strong className="text-black">{sizeConfig.dimensions}</strong>
                 </span>
               </div>
 
@@ -505,11 +550,34 @@ export default function CustomBouquet() {
                         Talla {sKey}
                       </span>
                       <span
-                        className={`text-[10px] font-medium tracking-wider block ${isSelected ? "text-[#E8CEAD]" : "text-[#B8924A]"
+                        className={`text-[10px] font-medium tracking-wider block mb-1.5 ${isSelected ? "text-[#E8CEAD]" : "text-[#B8924A]"
                           }`}
                       >
                         {sCfg.badge}
                       </span>
+                      <span
+                        className={`text-[10px] block border-t pt-1 font-mono leading-tight ${isSelected ? "text-white/80 border-white/20" : "text-[#6B6560] border-[#E8CEAD]/60"
+                          }`}
+                      >
+                        {sCfg.dimensions}
+                      </span>
+
+                      {/* Silueta de la talla debajo del texto de las medidas con el color exacto de la imagen */}
+                      <div className="mt-2.5 pt-2 border-t border-[#E8CEAD]/30 flex flex-col items-center justify-center w-full">
+                        <div
+                          className="relative h-36 sm:h-44 md:h-48 w-full rounded-xl overflow-hidden flex items-center justify-center p-2 border shadow-xs"
+                          style={{
+                            backgroundColor: SILHOUETTE_COLORS[sKey].bg,
+                            borderColor: SILHOUETTE_COLORS[sKey].border,
+                          }}
+                        >
+                          <img
+                            src={`/products/Talla ${sKey}.png`}
+                            alt={`Silueta referencial Talla ${sKey}`}
+                            className="h-full w-auto max-h-full object-contain transition-transform duration-300 hover:scale-105"
+                          />
+                        </div>
+                      </div>
                     </button>
                   );
                 })}
@@ -783,6 +851,7 @@ export default function CustomBouquet() {
                     src={referenceImage || sizeConfig.imageUrl}
                     alt=""
                     fill
+                    sizes="(max-width: 1024px) 100vw, 40vw"
                     className="object-cover"
                     aria-hidden="true"
                     unoptimized={Boolean(referenceImage)}
@@ -853,9 +922,14 @@ export default function CustomBouquet() {
 
                 {/* Lista de flores incluidas en esta talla */}
                 <div className="p-3 bg-[#FDF8F3] border border-[#E8CEAD] rounded-xl">
-                  <p className="text-[10px] uppercase tracking-widest text-[#B8924A] font-semibold mb-2">
-                    🌸 Incluye esta talla
-                  </p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] uppercase tracking-widest text-[#B8924A] font-semibold">
+                      🌸 Incluye esta talla
+                    </p>
+                    <span className="text-[10px] text-[#6B6560] font-mono">
+                      {sizeConfig.dimensions}
+                    </span>
+                  </div>
                   <ul className="space-y-1">
                     {sizeConfig.flowers.map((flower, i) => (
                       <li key={i} className="text-xs text-[#3A3530] flex items-start gap-1.5">
@@ -877,6 +951,46 @@ export default function CustomBouquet() {
                     <span className="font-medium text-black">
                       {sizeConfig.name}
                     </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#6B6560]">Medidas aprox.:</span>
+                    <span className="font-medium text-black font-mono">
+                      {sizeConfig.dimensions}
+                    </span>
+                  </div>
+
+                  {/* Silueta referencial de escala humana con el color exacto de la imagen */}
+                  <div
+                    className="p-2.5 border rounded-xl flex items-center gap-3.5 transition-colors shadow-2xs"
+                    style={{
+                      backgroundColor: `${SILHOUETTE_COLORS[size].bg}26`,
+                      borderColor: SILHOUETTE_COLORS[size].border,
+                    }}
+                  >
+                    <div
+                      className="relative h-24 w-16 flex-shrink-0 rounded-lg flex items-center justify-center p-1 border shadow-xs"
+                      style={{
+                        backgroundColor: SILHOUETTE_COLORS[size].bg,
+                        borderColor: SILHOUETTE_COLORS[size].border,
+                      }}
+                    >
+                      <img
+                        src={`/products/Talla ${size}.png`}
+                        alt={`Silueta Talla ${size}`}
+                        className="h-full w-auto object-contain"
+                      />
+                    </div>
+                    <div className="text-xs leading-relaxed min-w-0">
+                      <span className="font-semibold text-black block text-xs">
+                        Proporción Talla {size}
+                      </span>
+                      <span className="text-black font-mono font-medium block text-[11px]">
+                        {sizeConfig.dimensions}
+                      </span>
+                      <span className="text-[#6B6560] text-[10px] block mt-0.5">
+                        Escala referencial con persona
+                      </span>
+                    </div>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#6B6560]">Paleta de color:</span>
@@ -951,6 +1065,22 @@ export default function CustomBouquet() {
                       <span>Agregar ramo personalizado al carrito</span>
                     </>
                   )}
+                </button>
+
+                {/* Botón 2: Consultar diseño por WhatsApp */}
+                <button
+                  type="button"
+                  onClick={handleWhatsAppConsult}
+                  className="w-full py-3 px-4 bg-[#FAF3EC] hover:bg-[#F3E2CE] text-black border border-[#E8CEAD] text-xs uppercase tracking-[0.12em] font-medium transition-all flex items-center justify-center gap-2 rounded-xl active:scale-[0.99]"
+                >
+                  <svg
+                    className="w-4 h-4 text-[#25D366] flex-shrink-0"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+                  </svg>
+                  <span>Consultar este diseño por WhatsApp</span>
                 </button>
               </div>
             </div>

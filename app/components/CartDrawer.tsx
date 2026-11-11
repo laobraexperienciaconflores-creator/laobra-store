@@ -284,7 +284,14 @@ export default function CartDrawer() {
 
     // Items
     items.forEach((item) => {
-      message += `${item.quantity}x ${item.name} S/ ${(item.price * item.quantity).toFixed(2)}\n`;
+      message += `• ${item.quantity}x ${item.name} — S/ ${(item.price * item.quantity).toFixed(2)}\n`;
+      if (
+        item.referenceImage ||
+        item.imageUrl?.startsWith("data:") ||
+        item.imageUrl?.includes("references")
+      ) {
+        message += `  └ 📸 Foto de referencia adjunta para el florista (ver en boleta)\n`;
+      }
     });
     message += "\n";
 
@@ -342,12 +349,23 @@ export default function CartDrawer() {
     if (operationNumber.trim()) {
       message += `Pago: YAPE/PLIN (N° Op. ${operationNumber.trim()})\n`;
     } else {
-      message += `Pago: YAPE/PLIN (Confirming Payment)\n`;
+      message += `Pago: YAPE/PLIN\n`;
     }
     if (voucherFile) {
       message += "└ Comprobante adjunto 📸\n";
     } else {
       message += "└ Adjuntaré el comprobante en este chat.\n";
+    }
+
+    // Nota de personalización si hay fotos de referencia
+    const hasReference = items.some(
+      (i) =>
+        i.referenceImage ||
+        i.imageUrl?.startsWith("data:") ||
+        i.imageUrl?.includes("references")
+    );
+    if (hasReference) {
+      message += "└ 🌸 Pedido personalizado: incluye foto(s) de referencia adjunta(s)\n";
     }
     message += "\n";
 
@@ -356,7 +374,7 @@ export default function CartDrawer() {
       window.location.origin;
     const invoiceUrl = `${baseUrl}/orders/${generatedPublicToken}`;
 
-    message += `🧾 Ver factura: ${invoiceUrl}\n\n`;
+    message += `🧾 *Ver boleta / factura oficial:* ${invoiceUrl}\n\n`;
     message += `Enviado desde www.laobra.pe`;
 
     const encoded = encodeURIComponent(message);
@@ -655,7 +673,7 @@ export default function CartDrawer() {
                             fill
                             sizes="80px"
                             className="object-cover"
-                            unoptimized={item.imageUrl.startsWith("data:")}
+                            unoptimized={item.imageUrl.startsWith("data:") || item.imageUrl.startsWith("http")}
                           />
                         </div>
 

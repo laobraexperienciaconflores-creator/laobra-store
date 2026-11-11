@@ -39,10 +39,32 @@ function PaymentResultContent() {
   }, [estado]);
 
   const handleWhatsApp = () => {
-    const msg =
-      estado === "aprobado"
-        ? `¡Hola LA OBRA! 🌸 Acabo de pagar con Mercado Pago mi pedido *#${pedido}*. ¿Pueden confirmarme la entrega?`
-        : `¡Hola LA OBRA! Tuve un problema con mi pago en Mercado Pago (pedido *#${pedido}*). ¿Pueden ayudarme?`;
+    let msg = "";
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    const fullBoletaUrl = boletaUrl
+      ? boletaUrl.startsWith("http")
+        ? boletaUrl
+        : `${baseUrl}${boletaUrl}`
+      : "";
+
+    if (estado === "aprobado") {
+      msg = `¡Hola LA OBRA! 🌸 Acabo de pagar con Mercado Pago mi pedido *#${pedido}*.\n\n`;
+      if (fullBoletaUrl) {
+        msg += `🧾 Mi boleta: ${fullBoletaUrl}\n\n`;
+      }
+      msg += `¿Podrían confirmarme la programación de la entrega?`;
+    } else if (estado === "rechazado") {
+      msg = `¡Hola LA OBRA! 🌸 Tuve un problema con el pago de mi pedido *#${pedido}* en Mercado Pago (figura rechazado).\n\n`;
+      if (fullBoletaUrl) {
+        msg += `🧾 Mi boleta: ${fullBoletaUrl}\n\n`;
+      }
+      msg += `¿Podrían ayudarme a regularizarlo por Yape/Plin o transferencia para no perder mi pedido?`;
+    } else {
+      msg = `¡Hola LA OBRA! Tengo una consulta sobre el estado de mi pedido *#${pedido}*.\n\n`;
+      if (fullBoletaUrl) {
+        msg += `🧾 Mi boleta: ${fullBoletaUrl}\n\n`;
+      }
+    }
     window.open(
       `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`,
       "_blank",

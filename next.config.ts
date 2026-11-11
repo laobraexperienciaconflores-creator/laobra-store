@@ -14,10 +14,15 @@ const nextConfig: NextConfig = {
         hostname: "images.unsplash.com",
       },
       {
-        // Supabase Storage — imágenes de productos y comprobantes
+        // Supabase Storage — imágenes de productos, comprobantes y referencias
         protocol: "https",
         hostname: "ottydrzekgntvbtanznj.supabase.co",
-        pathname: "/storage/v1/object/public/**",
+        pathname: "/storage/v1/object/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/**",
       },
     ],
   },

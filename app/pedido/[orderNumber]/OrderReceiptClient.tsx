@@ -11,6 +11,7 @@ export interface OrderItem {
   price: number;
   quantity: number;
   imageUrl?: string;
+  referenceImage?: string;
   discountAmount?: number;
   couponCode?: string;
   discountPercentage?: number;
@@ -19,6 +20,7 @@ export interface OrderItem {
 }
 
 export interface OrderData {
+  id?: string;
   order_number: string;
   status: string;
   payment_status: string;
@@ -131,7 +133,12 @@ export default function OrderReceiptPage({
         : null) ||
       "";
 
-    const targetParam = privateToken || (initialOrder ? initialOrder.order_number : null);
+    const targetParam =
+      privateToken ||
+      initialOrder?.public_token ||
+      initialOrder?.id ||
+      initialOrder?.order_number ||
+      null;
     if (!targetParam) return;
 
     let isMounted = true;
@@ -242,6 +249,22 @@ export default function OrderReceiptPage({
 
   const totalItemsCount = order?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0;
 
+  const referenceItems =
+    order?.items
+      ?.map((item) => {
+        const url =
+          item.referenceImage ||
+          (item.imageUrl &&
+          (item.imageUrl.startsWith("data:") ||
+            item.imageUrl.includes("/references/") ||
+            item.imageUrl.includes("references%2F") ||
+            item.name.toLowerCase().includes("referencia"))
+            ? item.imageUrl
+            : null);
+        return url ? { url, name: item.name } : null;
+      })
+      .filter((ref): ref is { url: string; name: string } => Boolean(ref)) || [];
+
   useEffect(() => {
     if (hasDiscount) {
       try {
@@ -287,10 +310,32 @@ export default function OrderReceiptPage({
   };
 
   const handleWhatsAppHelp = () => {
-    const message = encodeURIComponent(
-      `¡Hola LA OBRA! 🌸 Tengo una consulta sobre mi boleta del pedido *#${orderNumber}*.`
+    const isRejected = order?.payment_status === "rechazado";
+    const isVerified =
+      order?.payment_status === "verificado" || order?.payment_status === "pagado";
+
+    const currentUrl = typeof window !== "undefined" ? window.location.href : "";
+
+    let text = `¡Hola LA OBRA! 🌸 Tengo una consulta sobre mi pedido *#${orderNumber}*.\n`;
+    if (isRejected) {
+      text = `¡Hola LA OBRA! 🌸 Mi pago del pedido *#${orderNumber}* figura como *observado o rechazado* en mi boleta.\n\n`;
+      text += `🧾 Boleta: ${currentUrl}\n\n`;
+      text += `¿Podrían ayudarme a regularizar el pago para que puedan procesar mi entrega?`;
+    } else if (isVerified) {
+      text = `¡Hola LA OBRA! 🌸 Mi pedido *#${orderNumber}* ya figura como *Pago Verificado*.\n\n`;
+      text += `🧾 Boleta: ${currentUrl}\n\n`;
+      text += `¿Podrían confirmarme la hora estimada de entrega?`;
+    } else {
+      text += `🧾 Boleta: ${currentUrl}\n\n`;
+      text += `Quisiera consultar sobre el estado de mi ramo.`;
+    }
+
+    const message = encodeURIComponent(text);
+    window.open(
+      `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`,
+      "_blank",
+      "noopener,noreferrer"
     );
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, "_blank", "noopener,noreferrer");
   };
 
   if (loading) {
@@ -398,7 +443,7 @@ export default function OrderReceiptPage({
                           fill
                           className="object-cover"
                           sizes="48px"
-                          unoptimized={item.imageUrl.startsWith("data:")}
+                          unoptimized={item.imageUrl.startsWith("data:") || item.imageUrl.startsWith("http")}
                         />
                       </div>
                     )}
@@ -460,6 +505,50 @@ export default function OrderReceiptPage({
               </div>
             </div>
           </div>
+
+          {/* 1.5. Foto(s) de referencia del cliente para el taller de flores */}
+          {referenceItems.length > 0 && (
+            <div className="p-4 sm:p-5 bg-[#FAF3EC] border border-[#E8CEAD] rounded-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs uppercase font-semibold text-black tracking-wider flex items-center gap-2">
+                  <span>📸</span> Foto de referencia para el florista
+                </span>
+                <span className="px-2 py-0.5 bg-[#B8924A] text-white text-[10px] font-semibold uppercase tracking-wider rounded-full shadow-xs">
+                  Ramo Personalizado
+                </span>
+              </div>
+              <p className="text-xs text-[#6B6560] leading-relaxed">
+                El cliente adjuntó esta imagen como guía de estilo, flores y volumen para la preparación de su pedido en nuestro taller:
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {referenceItems.map((ref, idx) => (
+                  <div key={idx} className="rounded-xl overflow-hidden border border-[#E8CEAD] bg-white p-3 shadow-xs">
+                    <div className="relative h-56 w-full rounded-lg bg-[#FDF8F3] overflow-hidden flex items-center justify-center">
+                      <img
+                        src={ref.url}
+                        alt={`Foto de referencia: ${ref.name}`}
+                        className="w-full h-full object-contain p-2"
+                      />
+                    </div>
+                    <div className="mt-2.5 flex items-center justify-between text-xs gap-2">
+                      <span className="font-medium text-black truncate" title={ref.name}>
+                        {ref.name}
+                      </span>
+                      <a
+                        href={ref.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#B8924A] hover:underline font-semibold inline-flex items-center gap-1 text-[11px] flex-shrink-0"
+                      >
+                        <span>Ver foto completa</span>
+                        <span>↗</span>
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* 2. Cliente y Entrega */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-[#F3E2CE]">
