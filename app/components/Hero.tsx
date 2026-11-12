@@ -17,19 +17,43 @@ export default function Hero() {
             en recuerdos que duran para siempre.
           </p>
 
-          <div className="mt-9 flex flex-wrap gap-4">
-            <a
-              href="#catalogo"
-              className="inline-flex min-h-12 items-center justify-center bg-black px-7 py-3 text-sm font-medium text-white transition hover:bg-black/80"
-            >
-              Explorar colección
-            </a>
+          <div className="mt-9 flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="relative group inline-block w-full sm:w-auto">
+              {/* Halo de resplandor dorado animado */}
+              <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#B8924A] via-[#E8CEAD] to-[#B8924A] opacity-80 blur-md group-hover:opacity-100 group-hover:blur-lg transition-all duration-500 animate-pulse" />
+
+              <a
+                href="#personalizar"
+                className="relative flex min-h-14 w-full sm:w-auto items-center justify-between sm:justify-center gap-3.5 overflow-hidden rounded-2xl bg-black px-7 py-3.5 text-white shadow-2xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] border border-[#B8924A]/80"
+              >
+                {/* Icono con fondo dorado */}
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#B8924A] to-[#8C6D2E] text-white text-sm shadow-sm">
+                  ✨
+                </span>
+
+                <div className="flex flex-col text-left">
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-[#E8CEAD] font-semibold leading-tight">
+                    100% Personalizado
+                  </span>
+                  <span className="text-base font-bold tracking-tight text-white leading-tight">
+                    Diseña tu ramo
+                  </span>
+                </div>
+
+                <span className="text-[#E8CEAD] text-xl font-light group-hover:translate-x-1.5 transition-transform duration-300 pl-1">
+                  →
+                </span>
+
+                {/* Destello de brillo diagonal que recorre el botón */}
+                <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+              </a>
+            </div>
 
             <a
-              href="#personalizar"
-              className="inline-flex min-h-12 items-center justify-center border border-black/30 px-7 py-3 text-sm font-medium text-black transition hover:bg-white/50"
+              href="#catalogo"
+              className="inline-flex min-h-14 items-center justify-center rounded-2xl border border-black/25 bg-white/40 px-7 py-3.5 text-sm font-medium text-black backdrop-blur-xs transition-all hover:bg-white/80 hover:border-black/60 w-full sm:w-auto text-center"
             >
-              Diseña tu ramo
+              Explorar colección
             </a>
           </div>
 

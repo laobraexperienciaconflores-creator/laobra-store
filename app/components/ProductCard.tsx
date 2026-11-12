@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { useCart } from "../context/CartContext";
 import { WHATSAPP_NUMBER } from "../lib/constants";
@@ -11,9 +11,41 @@ interface ProductCardProps {
   price: number;
   imageUrl: string;
   images?: string[];
+  videoUrl?: string;
   imageAlt: string;
   description?: string;
   tag?: string;
+}
+
+function ProductVideoSlide({ src, isActive }: { src: string; isActive: boolean }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (isActive) {
+      videoRef.current?.play().catch(() => {});
+    } else {
+      videoRef.current?.pause();
+    }
+  }, [isActive]);
+
+  return (
+    <div
+      className={`absolute inset-0 transition-opacity duration-500 ease-out ${
+        isActive ? "opacity-100 z-0" : "opacity-0 pointer-events-none"
+      }`}
+    >
+      <video
+        ref={videoRef}
+        src={src}
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="metadata"
+        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+      />
+    </div>
+  );
 }
 
 export default function ProductCard({
@@ -22,6 +54,7 @@ export default function ProductCard({
   price,
   imageUrl,
   images,
+  videoUrl,
   imageAlt,
   description,
   tag,
@@ -31,7 +64,16 @@ export default function ProductCard({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
-  const imageList = images && images.length > 0 ? images : [imageUrl];
+  const rawImages = images && images.length > 0 ? images : [imageUrl];
+
+  type MediaItem =
+    | { type: "image"; src: string }
+    | { type: "video"; src: string };
+
+  const mediaList: MediaItem[] = [
+    ...rawImages.map((src) => ({ type: "image" as const, src })),
+    ...(videoUrl ? [{ type: "video" as const, src: videoUrl }] : []),
+  ];
 
   const formattedPrice = new Intl.NumberFormat("es-PE", {
     style: "currency",
@@ -40,7 +82,7 @@ export default function ProductCard({
   }).format(price);
 
   const handleAddToCart = () => {
-    addItem({ id, name, price, imageUrl: imageList[0] });
+    addItem({ id, name, price, imageUrl: rawImages[0] });
     setIsAdded(true);
     setTimeout(() => {
       setIsAdded(false);
@@ -49,12 +91,12 @@ export default function ProductCard({
 
   const handleNextImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev + 1) % imageList.length);
+    setCurrentImageIndex((prev) => (prev + 1) % mediaList.length);
   };
 
   const handlePrevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev - 1 + imageList.length) % imageList.length);
+    setCurrentImageIndex((prev) => (prev - 1 + mediaList.length) % mediaList.length);
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -66,9 +108,9 @@ export default function ProductCard({
     const touchEndX = e.changedTouches[0].clientX;
     const diff = touchStartX - touchEndX;
     if (diff > 40) {
-      setCurrentImageIndex((prev) => (prev + 1) % imageList.length);
+      setCurrentImageIndex((prev) => (prev + 1) % mediaList.length);
     } else if (diff < -40) {
-      setCurrentImageIndex((prev) => (prev - 1 + imageList.length) % imageList.length);
+      setCurrentImageIndex((prev) => (prev - 1 + mediaList.length) % mediaList.length);
     }
     setTouchStartX(null);
   };
@@ -83,7 +125,7 @@ export default function ProductCard({
   return (
     <article className="group flex flex-col justify-between" aria-label={`Producto: ${name}`}>
       <div>
-        {/* Image wrapper */}
+        {/* Image / Video wrapper */}
         <div
           className="relative aspect-[3/4] overflow-hidden mb-5 transition-transform duration-500 ease-out cursor-pointer select-none"
           style={{ background: "#F3E2CE" }}
@@ -91,23 +133,38 @@ export default function ProductCard({
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          {imageList.map((imgSrc, idx) => (
-            <div
-              key={imgSrc}
-              className={`absolute inset-0 transition-opacity duration-500 ease-out ${idx === currentImageIndex ? "opacity-100 z-0" : "opacity-0 pointer-events-none"
+          {mediaList.map((media, idx) => {
+            const isActive = idx === currentImageIndex;
+
+            if (media.type === "video") {
+              return (
+                <ProductVideoSlide
+                  key={media.src}
+                  src={media.src}
+                  isActive={isActive}
+                />
+              );
+            }
+
+            return (
+              <div
+                key={media.src}
+                className={`absolute inset-0 transition-opacity duration-500 ease-out ${
+                  isActive ? "opacity-100 z-0" : "opacity-0 pointer-events-none"
                 }`}
-            >
-              <Image
-                src={imgSrc}
-                alt={`${imageAlt} - Foto ${idx + 1}`}
-                fill
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
-                className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                quality={85}
-                priority={idx === 0}
-              />
-            </div>
-          ))}
+              >
+                <Image
+                  src={media.src}
+                  alt={`${imageAlt} - Foto ${idx + 1}`}
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
+                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                  quality={85}
+                  priority={idx === 0}
+                />
+              </div>
+            );
+          })}
 
           {tag && (
             <span
@@ -122,8 +179,44 @@ export default function ProductCard({
             </span>
           )}
 
+          {/* Botón rápido para alternar a Video / Fotos */}
+          {videoUrl && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const videoIdx = mediaList.findIndex((m) => m.type === "video");
+                if (videoIdx !== -1) {
+                  setCurrentImageIndex(currentImageIndex === videoIdx ? 0 : videoIdx);
+                }
+              }}
+              className={`absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-medium tracking-wider uppercase backdrop-blur-md transition-all shadow-sm ${
+                mediaList[currentImageIndex]?.type === "video"
+                  ? "bg-black text-[#F3E2CE] ring-1 ring-[#B8924A]"
+                  : "bg-white/90 text-black hover:bg-white"
+              }`}
+              title={
+                mediaList[currentImageIndex]?.type === "video"
+                  ? "Ver fotos"
+                  : "Ver video del arreglo"
+              }
+              aria-label="Ver video del arreglo"
+            >
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className={mediaList[currentImageIndex]?.type === "video" ? "text-[#B8924A]" : "text-black"}
+              >
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
+              <span>{mediaList[currentImageIndex]?.type === "video" ? "Fotos" : "Video"}</span>
+            </button>
+          )}
+
           {/* Slider controls */}
-          {imageList.length > 1 && (
+          {mediaList.length > 1 && (
             <>
               {/* Prev button */}
               <button
@@ -154,7 +247,7 @@ export default function ProductCard({
                 className="absolute bottom-3 inset-x-0 z-20 flex justify-center items-center gap-1.5 pointer-events-auto"
                 onClick={(e) => e.stopPropagation()}
               >
-                {imageList.map((_, idx) => (
+                {mediaList.map((media, idx) => (
                   <button
                     key={idx}
                     type="button"
@@ -162,11 +255,16 @@ export default function ProductCard({
                       e.stopPropagation();
                       setCurrentImageIndex(idx);
                     }}
-                    aria-label={`Ir a foto ${idx + 1}`}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentImageIndex
+                    aria-label={
+                      media.type === "video"
+                        ? "Ver video"
+                        : `Ir a foto ${idx + 1}`
+                    }
+                    className={`h-1.5 rounded-full transition-all duration-300 flex items-center justify-center ${
+                      idx === currentImageIndex
                         ? "w-6 bg-white shadow"
                         : "w-2 bg-white/60 hover:bg-white/90 shadow-sm"
-                      }`}
+                    }`}
                   />
                 ))}
               </div>

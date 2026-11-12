@@ -10,6 +10,7 @@ const products = [
     description: "Hay personas que lo iluminan todo. LUMBRE composición cálida y expresiva que combina rosas mandarina y durazno con flores verdes, diferentes texturas y una delicada caída floral dedicatoria personal.",
     imageUrl: "/products/lumbre.jpg",
     images: ["/products/lumbre.jpg", "/products/lumbre-model.jpg"],
+    videoUrl: "/products/Lumbrevid.mp4",
     imageAlt: "LUMBRE | Bouquet de autor",
   },
   {
@@ -19,6 +20,7 @@ const products = [
     description: "Lo que sientes, en flores. VELA es una composición intensa y sofisticada que combina rosas rosadas, flores en tonos vino y elegantes calas oscuras. Incluye tarjeta para dedicatoria personalizada.",
     imageUrl: "/products/vela.jpg",
     images: ["/products/vela.jpg", "/products/vela-model.jpg"],
+    videoUrl: "/products/Velavid.mp4",
     imageAlt: "VELA | Bouquet romántico premium",
   },
   {
@@ -28,6 +30,7 @@ const products = [
     description: "Sentimientos que florecen. CARMESÍ reúne flores en rojo vino profundo, rosas rosadas y delicados acentos florales en una composición abundante y romántica. Incluye dedicatoria personalizada.",
     imageUrl: "/products/carmesí.jpg",
     images: ["/products/carmesí.jpg", "/products/carmesi-model.jpg"],
+    videoUrl: "/products/Carmesivid.mp4",
     imageAlt: "CARMESÍ | Bouquet romántico",
   },
   {
@@ -37,6 +40,7 @@ const products = [
     description: "Cuando las flores lo dicen todo. SILENCIO es una composición de presencia elegante y serena, creada con lirios blancos, calas y anturios en tonos marfil. Incluye tarjeta para dedicatoria personalizada.",
     imageUrl: "/products/silencio.jpg",
     images: ["/products/silencio.jpg", "/products/silencio-model.jpg"],
+    videoUrl: "/products/Silenciovid.mp4",
     imageAlt: "SILENCIO | Bouquet de autor",
   },
   {
@@ -46,6 +50,7 @@ const products = [
     description: "Alegría que florece. BRUMA composición luminosa y delicada donde las gerberas coral y frambuesa se encuentran con rosas y detalles florales llenos de frescura. Incluye dedicatoria personalizada.",
     imageUrl: "/products/bruma.jpg",
     images: ["/products/bruma.jpg", "/products/bruma-model.jpg"],
+    videoUrl: "/products/Brumavid.mp4",
     imageAlt: "BRUMA | Bouquet floral",
   },
   /*{
@@ -64,6 +69,7 @@ const products = [
     description: "La belleza de lo inesperado. NIEBLA es una composición floral de inspiración artística, con hortensias azules, iris violetas y delicadas flores en tonos lavanda. Incluye dedicatoria personalizada.",
     imageUrl: "/products/niebla.jpg",
     images: ["/products/niebla.jpg", "/products/niebla-model.jpg"],
+    videoUrl: "/products/Nieblavid.mp4",
     imageAlt: "NIEBLA | Bouquet artístico",
   },
 ];
