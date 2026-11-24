@@ -1,219 +1,17 @@
 "use client";
 
-import { useState, useId, useRef } from "react";
+import { useState, useId, useRef, useCallback } from "react";
 import Image from "next/image";
 import { useCart } from "../context/CartContext";
 import { FREE_DELIVERY_THRESHOLD } from "../lib/delivery";
 import { WHATSAPP_NUMBER } from "../lib/constants";
-
-export type BouquetCategory = "estandar" | "exclusivo" | "lujo";
-export type BouquetSize = "S" | "M" | "L" | "XL";
-
-export interface SizeConfig {
-  size: BouquetSize;
-  name: string;
-  badge: string;
-  /** Medidas aproximadas del ramo (alto x diámetro) */
-  dimensions: string;
-  minPrice: number;
-  maxPrice: number;
-  defaultPrice: number;
-  description: string;
-  /** Imagen referencial de la talla dentro de esta categoría */
-  imageUrl: string;
-  /** Flores / elementos típicos incluidos en esta talla */
-  flowers: string[];
-}
-
-export interface CategoryConfig {
-  id: BouquetCategory;
-  name: string;
-  subtitle: string;
-  badge: string;
-  description: string;
-  imageUrl: string;
-  sizes: Record<BouquetSize, SizeConfig>;
-}
-
-export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
-  estandar: {
-    id: "estandar",
-    name: "Estándar",
-    subtitle: "Frescura & Armonía cotidiana",
-    badge: "Accesible & Clásico",
-    description:
-      "Flores frescas de temporada seleccionadas el mismo día, combinadas con follajes aromáticos y envoltura artesanal.",
-    imageUrl: "/products/bruma.jpg",
-    sizes: {
-      S: {
-        size: "S",
-        name: "Pequeño (S)",
-        badge: "55 – 85 soles",
-        dimensions: "30 – 35 cm alto × 25 cm ø",
-        minPrice: 55,
-        maxPrice: 85,
-        defaultPrice: 65,
-        description: "Detalle íntimo y delicado, perfecto para un gesto espontáneo.",
-        imageUrl: "/products/niebla.jpg",
-        flowers: ["5–8 flores de temporada", "3-6 flores de relleno", "Follaje clásico", "Envoltura clásica", "(Puede contener 1 flor exclusiva)"],
-      },
-      M: {
-        size: "M",
-        name: "Mediano (M)",
-        badge: "95 – 135 soles",
-        dimensions: "40 – 45 cm alto × 35 cm ø",
-        minPrice: 95,
-        maxPrice: 135,
-        defaultPrice: 115,
-        description: "Tamaño ideal para cumpleaños o felicitaciones, muy vistoso.",
-        imageUrl: "/products/bruma.jpg",
-        flowers: ["8–12 flores de temporada", "6-9 flores de relleno", "Follaje clásico", "Envoltura clásica", "(Puede contener 2 flores exclusivas)"],
-      },
-      L: {
-        size: "L",
-        name: "Grande (L)",
-        badge: "145 – 205 soles",
-        dimensions: "50 – 55 cm alto × 45 cm ø",
-        minPrice: 145,
-        maxPrice: 205,
-        defaultPrice: 175,
-        description: "Abundancia floral con variedad de especies y follajes selectos.",
-        imageUrl: "/products/lumbre.jpg",
-        flowers: ["12-18 flores de temporada", "6-8 flores mixtas", "Follaje clásico", "Envoltura clásica", "(Puede contener 3 flores exclusivas)"],
-      },
-      XL: {
-        size: "XL",
-        name: "Extra Grande (XL)",
-        badge: "220 – 290 soles",
-        dimensions: "60 – 70 cm alto × 55 cm ø",
-        minPrice: 220,
-        maxPrice: 290,
-        defaultPrice: 250,
-        description: "Ramo de gran volumen e impacto, memorable y protagónico.",
-        imageUrl: "/products/carmesí.jpg",
-        flowers: ["18-24 flores de temporada", "8-12 flores mixtas", "Follaje clásico", "Envoltura clásica", "(Puede contener 4 flores exclusivas)"],
-      },
-    },
-  },
-  exclusivo: {
-    id: "exclusivo",
-    name: "Exclusivo",
-    subtitle: "Diseño de Autor & Flores Selectas",
-    badge: "Más Solicitado",
-    description:
-      "Variedades premium de flores, texturas botánicas especiales, rosas selectas y arreglos con caída y arquitectura floral.",
-    imageUrl: "/products/vela.jpg",
-    sizes: {
-      S: {
-        size: "S",
-        name: "Pequeño (S)",
-        badge: "100 – 130 soles",
-        dimensions: "30 – 35 cm alto × 25 cm ø",
-        minPrice: 100,
-        maxPrice: 130,
-        defaultPrice: 110,
-        description: "Pieza de diseño boutique con flores de alta gama.",
-        imageUrl: "/products/niebla.jpg",
-        flowers: ["6-8 flores premium", "4-6 flores de relleno", "Follaje aromático", "Envoltura premium", "Puede contener 2 flor exclusiva"],
-      },
-      M: {
-        size: "M",
-        name: "Mediano (M)",
-        badge: "150 – 190 soles",
-        dimensions: "40 – 45 cm alto × 35 cm ø",
-        minPrice: 150,
-        maxPrice: 190,
-        defaultPrice: 160,
-        description: "Equilibrio estético superior, flores protagonistas y acentos elegantes.",
-        imageUrl: "/products/vela.jpg",
-        flowers: ["8-10 flores premium", "6-10 flores de relleno", "Follaje aromático", "Envoltura premium", "Puede contener 4 flores exclusivas"],
-      },
-      L: {
-        size: "L",
-        name: "Grande (L)",
-        badge: "200 – 295 soles",
-        dimensions: "50 – 55 cm alto × 45 cm ø",
-        minPrice: 200,
-        maxPrice: 295,
-        defaultPrice: 245,
-        description: "Composición de autor exuberante, dramática y sofisticada.",
-        imageUrl: "/products/lumbre.jpg",
-        flowers: ["10-16 flores premium", "10-16 flores de relleno", "Follaje aromático", "Envoltura premium", "Puede contener 6 flores exclusivas"],
-      },
-      XL: {
-        size: "XL",
-        name: "Extra Grande (XL)",
-        badge: "310 – 390 soles",
-        dimensions: "60 – 70 cm alto × 55 cm ø",
-        minPrice: 310,
-        maxPrice: 390,
-        defaultPrice: 340,
-        description: "Obra floral monumental con tallos exclusivos y envoltura de lino.",
-        imageUrl: "/products/silencio.jpg",
-        flowers: ["20+flores premium", "20+ flores de relleno", "Follaje aromático", "Envoltura premium", "Puede contener 8 flores exclusivas"],
-      },
-    },
-  },
-  lujo: {
-    id: "lujo",
-    name: "Lujo",
-    subtitle: "Alta Costura Floral",
-    badge: "Colección Excepcional",
-    description:
-      "Flores importadas de exportación, orquídeas, anturios, tulipanes o calas oscuras con presentación de lujo de autor.",
-    imageUrl: "/products/silencio.jpg",
-    sizes: {
-      S: {
-        size: "S",
-        name: "Pequeño (S)",
-        badge: "Desde 160 soles",
-        dimensions: "30 – 35 cm alto × 25 cm ø",
-        minPrice: 160,
-        maxPrice: 210,
-        defaultPrice: 160,
-        description: "Arreglo joya con especies raras y presentación de lujo absoluto.",
-        imageUrl: "/products/carmesí.jpg",
-        flowers: ["8-10 flores exclusivas", "4-8 flores de mixtas", "Follaje premium", "Envoltura premium", "Puede contener 1 flor exótica", "Entrega especial"],
-      },
-      M: {
-        size: "M",
-        name: "Mediano (M)",
-        badge: "Desde 215 soles",
-        dimensions: "40 – 45 cm alto × 35 cm ø",
-        minPrice: 215,
-        maxPrice: 285,
-        defaultPrice: 215,
-        description: "Presencia escultural con orquídeas o flores de colección.",
-        imageUrl: "/products/silencio.jpg",
-        flowers: ["12-16 flores exclusivas", "6-12 flores mixtas", "Follaje premium", "Envoltura premium", "Puede contener 2 flores exóticas", "Entrega especial"],
-      },
-      L: {
-        size: "L",
-        name: "Grande (L)",
-        badge: "Desde 290 soles",
-        dimensions: "50 – 55 cm alto × 45 cm ø",
-        minPrice: 290,
-        maxPrice: 400,
-        defaultPrice: 290,
-        description: "Espectacular despliegue de alta floristería con volumen opulento.",
-        imageUrl: "/products/vela.jpg",
-        flowers: ["18-24 flores exclusivas", "10-16 flores de mixtas", "Follaje premium", "Envoltura premium", "Puede contener 3 flores exóticas", "Entrega especial"],
-      },
-      XL: {
-        size: "XL",
-        name: "Extra Grande (XL)",
-        badge: "Desde 410 soles",
-        dimensions: "60 – 70 cm alto × 55 cm ø",
-        minPrice: 410,
-        maxPrice: 600,
-        defaultPrice: 410,
-        description: "Máxima expresión del arte floral. Impacto visual extraordinario e inolvidable.",
-        imageUrl: "/products/carmesí.jpg",
-        flowers: ["24+ flores exclusivas", "24+ flores de mixtas", "Follaje premium", "Envoltura premium", "Puede contener 4 flores exóticas", "Entrega especial"],
-      },
-    },
-  },
-};
+import {
+  BOUQUET_CONFIGS,
+  COLOR_PRESETS,
+  INDIVIDUAL_COLORS,
+  type BouquetCategory,
+  type BouquetSize,
+} from "../lib/bouquet";
 
 const SILHOUETTE_COLORS: Record<BouquetSize, { bg: string; border: string }> = {
   S: { bg: "#F0D8BB", border: "#DFC09D" },
@@ -222,60 +20,32 @@ const SILHOUETTE_COLORS: Record<BouquetSize, { bg: string; border: string }> = {
   XL: { bg: "#F4DDC3", border: "#E5CBAB" },
 };
 
-const COLOR_PRESETS = [
-  {
-    id: "romantico",
-    label: "Romántico & Pastel",
-    description: "Rosa, rubor, blanco & toques marfil",
-    dots: ["#F8BBD0", "#FFFFFF", "#E1BEE7"],
-  },
-  {
-    id: "calido",
-    label: "Cálido & Atardecer",
-    description: "Mandarina, durazno, coral & terracota",
-    dots: ["#FF8A65", "#FFCC80", "#FFE082"],
-  },
-  {
-    id: "sereno",
-    label: "Blanco & Marfil",
-    description: "Blanco puro, crema & follaje verde eucalipto",
-    dots: ["#FFFFFF", "#F5F5DC", "#A5D6A7"],
-  },
-  {
-    id: "pasion",
-    label: "Pasión & Vino",
-    description: "Rojo profundo, borgoña, escarlata & vino",
-    dots: ["#B71C1C", "#880E4F", "#C2185B"],
-  },
-  {
-    id: "mistico",
-    label: "Místico & Silvestre",
-    description: "Lila, lavanda, toques azules & flores silvestres",
-    dots: ["#CE93D8", "#90CAF9", "#80CBC4"],
-  },
-  {
-    id: "sorpresa",
-    label: "Sorpresa del Florista",
-    description: "La mejor selección y combinación armónica del día",
-    dots: ["#B8924A", "#4A6B53", "#F3E2CE"],
-  },
-];
-
-const INDIVIDUAL_COLORS = [
-  { name: "Blanco", color: "#FFFFFF", border: true },
-  { name: "Rosado", color: "#EC407A" },
-  { name: "Rosa Pastel", color: "#F48FB1" },
-  { name: "Fucsia", color: "#D81B60" },
-  { name: "Rojo Vino", color: "#880E4F" },
-  { name: "Morado", color: "#6A1B9A" },
-  { name: "Lila / Violeta", color: "#CE93D8" },
-  { name: "Naranja", color: "#FB8C00" },
-  { name: "Durazno", color: "#FFAB91" },
-  { name: "Amarillo", color: "#FFE082" },
-  { name: "Azul", color: "#90CAF9" },
-  { name: "Negro", color: "#1A1A1A" },
-  { name: "Follaje Verde", color: "#81C784" },
-];
+/**
+ * Reduce una imagen (data URL) a máx. 800px y la convierte a JPEG.
+ * Mantiene ligero el carrito en localStorage y el payload del pedido.
+ */
+function compressImageDataUrl(src: string, maxDim = 800, quality = 0.78): Promise<string> {
+  return new Promise((resolve) => {
+    const img = document.createElement("img");
+    img.onload = () => {
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const width = Math.round(img.width * scale);
+      const height = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return resolve(src);
+      // Fondo blanco para imágenes con transparencia (JPEG no tiene canal alfa)
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = () => resolve(src);
+    img.src = src;
+  });
+}
 
 export default function CustomBouquet() {
   const { addItem, openCart } = useCart();
@@ -299,6 +69,48 @@ export default function CustomBouquet() {
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [referenceFileName, setReferenceFileName] = useState<string | null>(null);
 
+  // ── Preview IA ──
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+
+  // ── Tracking de paso activo y pasos completados con minimización ──
+  const [activeStep, setActiveStep] = useState<number>(1);
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const step1Ref = useRef<HTMLDivElement>(null);
+  const step2Ref = useRef<HTMLDivElement>(null);
+  const step3Ref = useRef<HTMLDivElement>(null);
+  const step4Ref = useRef<HTMLDivElement>(null);
+  const summaryRef = useRef<HTMLDivElement>(null);
+
+  const stepRefs: Record<number, React.RefObject<HTMLDivElement | null>> = {
+    1: step1Ref,
+    2: step2Ref,
+    3: step3Ref,
+    4: step4Ref,
+    5: summaryRef,
+  };
+
+  const markStepAndAdvance = useCallback((stepNumber: number) => {
+    setCompletedSteps((prev) => {
+      const next = new Set(prev);
+      next.add(stepNumber);
+      return next;
+    });
+
+    // Minimiza el paso actual y abre el siguiente paso
+    const nextStep = stepNumber < 4 ? stepNumber + 1 : 0;
+    setActiveStep(nextStep);
+
+    // Scroll suave al siguiente paso o resumen
+    const nextRef = stepRefs[stepNumber + 1];
+    if (nextRef?.current) {
+      setTimeout(() => {
+        nextRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
+    }
+  }, []);
+
   const handleReferenceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -311,38 +123,9 @@ export default function CustomBouquet() {
     setReferenceFileName(file.name);
 
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = document.createElement("img");
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const MAX_DIM = 800;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_DIM) {
-            height = Math.round((height * MAX_DIM) / width);
-            width = MAX_DIM;
-          }
-        } else {
-          if (height > MAX_DIM) {
-            width = Math.round((width * MAX_DIM) / height);
-            height = MAX_DIM;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.78);
-          setReferenceImage(compressedDataUrl);
-        } else {
-          setReferenceImage(event.target?.result as string);
-        }
-      };
-      img.src = event.target?.result as string;
+    reader.onload = async (event) => {
+      const original = event.target?.result as string;
+      setReferenceImage(await compressImageDataUrl(original));
     };
     reader.readAsDataURL(file);
   };
@@ -355,17 +138,57 @@ export default function CustomBouquet() {
     }
   };
 
+  // ── Generar vista previa con IA ──
+  const handleGeneratePreview = async () => {
+    setIsGeneratingPreview(true);
+    setPreviewError(null);
+
+    try {
+      // Solo se envían identificadores; el servidor arma el prompt con su propia configuración
+      const res = await fetch("/api/preview-bouquet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category,
+          size,
+          colors: selectedColors,
+          preset: selectedPreset,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(
+          err.error || `Error ${res.status}`
+        );
+      }
+
+      const data = await res.json();
+      // Comprimir: la imagen original de Gemini pesa 1–2 MB y saturaría el carrito
+      setPreviewImage(await compressImageDataUrl(data.image));
+    } catch (err) {
+      console.error("Preview generation failed:", err);
+      setPreviewError(
+        err instanceof Error ? err.message : "No se pudo generar la vista previa"
+      );
+    } finally {
+      setIsGeneratingPreview(false);
+    }
+  };
+
   // Al cambiar categoría o tamaño, sincronizar el precio con el nuevo rango
   const handleCategoryChange = (newCategory: BouquetCategory) => {
     setCategory(newCategory);
     const newConfig = BOUQUET_CONFIGS[newCategory].sizes[size];
     setPrice(newConfig.defaultPrice);
+    markStepAndAdvance(1);
   };
 
   const handleSizeChange = (newSize: BouquetSize) => {
     setSize(newSize);
     const newConfig = categoryConfig.sizes[newSize];
     setPrice(newConfig.defaultPrice);
+    markStepAndAdvance(2);
   };
 
   const handlePresetSelect = (presetId: string) => {
@@ -379,6 +202,7 @@ export default function CustomBouquet() {
       else if (presetId === "pasion") setSelectedColors(["Rojo Vino", "Fucsia"]);
       else if (presetId === "mistico") setSelectedColors(["Lila / Violeta", "Azul"]);
     }
+    setCompletedSteps((prev) => new Set(prev).add(4));
   };
 
   const toggleColor = (colorName: string) => {
@@ -390,6 +214,12 @@ export default function CustomBouquet() {
         return [...prev.slice(1), colorName];
       }
       return [...prev, colorName];
+    });
+    // Marcar paso 4 como completado (sin avanzar al siguiente)
+    setCompletedSteps((prev) => {
+      const next = new Set(prev);
+      next.add(4);
+      return next;
     });
   };
 
@@ -469,379 +299,621 @@ export default function CustomBouquet() {
         {/* Layout en dos columnas: Configuración a la izquierda, Preview a la derecha */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* Columna Izquierda: Controles interactivos (7 cols) */}
-          <div className="lg:col-span-7 space-y-8 bg-white p-6 sm:p-8 rounded-2xl border border-[#E8CEAD] shadow-sm">
+          <div className="lg:col-span-7 space-y-4 bg-white p-6 sm:p-8 rounded-2xl border border-[#E8CEAD] shadow-sm">
             {/* PASO 1: Categoría de flores */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs uppercase font-semibold tracking-wider text-black flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-black text-white text-[11px] flex items-center justify-center font-mono">
-                    1
-                  </span>
-                  Categoría de flores
-                </span>
-                <span className="text-[11px] text-[#B8924A] font-medium">
-                  {categoryConfig.name}: {categoryConfig.subtitle}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {(Object.keys(BOUQUET_CONFIGS) as BouquetCategory[]).map((catKey) => {
-                  const cfg = BOUQUET_CONFIGS[catKey];
-                  const isSelected = category === catKey;
-                  return (
-                    <button
-                      key={catKey}
-                      type="button"
-                      onClick={() => handleCategoryChange(catKey)}
-                      className={`p-3.5 rounded-xl border text-left transition-all relative ${isSelected
-                        ? "border-black bg-[#FAF3EC] shadow-sm ring-1 ring-black"
-                        : "border-[#E8CEAD] bg-white hover:border-black/50"
-                        }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-semibold text-black">
-                          {cfg.name}
-                        </span>
-                        {isSelected && (
-                          <span className="w-2 h-2 rounded-full bg-[#B8924A]" />
-                        )}
-                      </div>
-                      <span className="text-[10px] block font-medium uppercase tracking-wider text-[#B8924A] mb-1">
-                        {cfg.badge}
+            <div ref={step1Ref} className="scroll-mt-24 sm:scroll-mt-28">
+              {activeStep === 1 ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs uppercase font-semibold tracking-wider text-black flex items-center gap-2">
+                      <span className={`w-5 h-5 rounded-full text-[11px] flex items-center justify-center font-mono transition-colors duration-300 ${
+                        completedSteps.has(1)
+                          ? "bg-[#4A6B53] text-white"
+                          : "bg-black text-white"
+                      }`}>
+                        {completedSteps.has(1) ? "✓" : "1"}
                       </span>
-                      <p className="text-[11px] text-[#6B6560] leading-snug line-clamp-2">
-                        {cfg.subtitle}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
+                      Categoría de flores
+                    </span>
+                    <span className="text-[11px] text-[#B8924A] font-medium">
+                      {categoryConfig.name}: {categoryConfig.subtitle}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {(Object.keys(BOUQUET_CONFIGS) as BouquetCategory[]).map((catKey) => {
+                      const cfg = BOUQUET_CONFIGS[catKey];
+                      const isSelected = category === catKey;
+                      return (
+                        <button
+                          key={catKey}
+                          type="button"
+                          onClick={() => handleCategoryChange(catKey)}
+                          className={`p-3.5 rounded-xl border text-left transition-all relative ${
+                            isSelected
+                              ? "border-black bg-[#FAF3EC] shadow-sm ring-1 ring-black"
+                              : "border-[#E8CEAD] bg-white hover:border-black/50"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-semibold text-black">
+                              {cfg.name}
+                            </span>
+                            {isSelected && (
+                              <span className="w-2 h-2 rounded-full bg-[#B8924A]" />
+                            )}
+                          </div>
+                          <span className="text-[10px] block font-medium uppercase tracking-wider text-[#B8924A] mb-1">
+                            {cfg.badge}
+                          </span>
+                          <p className="text-[11px] text-[#6B6560] leading-snug line-clamp-2">
+                            {cfg.subtitle}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => setActiveStep(1)}
+                  className="p-3.5 bg-[#FAF3EC] border border-[#E8CEAD] rounded-xl flex items-center justify-between cursor-pointer hover:border-black/50 transition-all group shadow-2xs"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="w-6 h-6 rounded-full bg-[#4A6B53] text-white text-xs flex items-center justify-center font-bold shrink-0 shadow-xs">
+                      ✓
+                    </span>
+                    <div className="min-w-0">
+                      <span className="text-[10px] uppercase tracking-wider text-[#6B6560] block font-medium">
+                        Paso 1 · Categoría de flores
+                      </span>
+                      <span className="text-sm font-medium text-black truncate block">
+                        Ramo {categoryConfig.name}{" "}
+                        <span className="text-[#6B6560] text-xs font-normal">
+                          ({categoryConfig.subtitle})
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveStep(1);
+                    }}
+                    className="text-[11px] text-[#B8924A] group-hover:text-black font-medium tracking-wide uppercase px-2.5 py-1 rounded-md bg-white border border-[#E8CEAD] shadow-2xs transition-colors shrink-0"
+                  >
+                    Cambiar
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* PASO 2: Selección de Tallas (S, M, L, XL) */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs uppercase font-semibold tracking-wider text-black flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-black text-white text-[11px] flex items-center justify-center font-mono">
-                    2
-                  </span>
-                  Talla del arreglo
-                </span>
-                <span className="text-[11px] text-[#6B6560]">
-                  Medidas aprox.: <strong className="text-black">{sizeConfig.dimensions}</strong>
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                {(["S", "M", "L", "XL"] as BouquetSize[]).map((sKey) => {
-                  const sCfg = categoryConfig.sizes[sKey];
-                  const isSelected = size === sKey;
-                  return (
-                    <button
-                      key={sKey}
-                      type="button"
-                      onClick={() => handleSizeChange(sKey)}
-                      className={`p-3 rounded-xl border text-center transition-all ${isSelected
-                        ? "border-black bg-black text-white shadow-md"
-                        : "border-[#E8CEAD] bg-white text-black hover:border-black/60"
-                        }`}
-                    >
-                      <span className="text-lg font-light block mb-0.5" style={{ fontFamily: "Georgia, serif" }}>
-                        Talla {sKey}
+            <div ref={step2Ref} className="scroll-mt-24 sm:scroll-mt-28">
+              {activeStep === 2 ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs uppercase font-semibold tracking-wider text-black flex items-center gap-2">
+                      <span className={`w-5 h-5 rounded-full text-[11px] flex items-center justify-center font-mono transition-colors duration-300 ${
+                        completedSteps.has(2)
+                          ? "bg-[#4A6B53] text-white"
+                          : "bg-black text-white"
+                      }`}>
+                        {completedSteps.has(2) ? "✓" : "2"}
                       </span>
-                      <span
-                        className={`text-[10px] font-medium tracking-wider block mb-1.5 ${isSelected ? "text-[#E8CEAD]" : "text-[#B8924A]"
-                          }`}
-                      >
-                        {sCfg.badge}
-                      </span>
-                      <span
-                        className={`text-[10px] block border-t pt-1 font-mono leading-tight ${isSelected ? "text-white/80 border-white/20" : "text-[#6B6560] border-[#E8CEAD]/60"
-                          }`}
-                      >
-                        {sCfg.dimensions}
-                      </span>
-
-                      {/* Silueta de la talla debajo del texto de las medidas con el color exacto de la imagen */}
-                      <div className="mt-2 pt-1.5 sm:mt-2.5 sm:pt-2 border-t border-[#E8CEAD]/30 flex flex-col items-center justify-center w-full">
-                        <div
-                          className="relative h-28 sm:h-44 md:h-48 w-full rounded-xl overflow-hidden flex items-center justify-center p-1.5 sm:p-2 border shadow-xs"
-                          style={{
-                            backgroundColor: SILHOUETTE_COLORS[sKey].bg,
-                            borderColor: SILHOUETTE_COLORS[sKey].border,
-                          }}
-                        >
-                          <img
-                            src={`/products/Talla ${sKey}.png`}
-                            alt={`Silueta referencial Talla ${sKey}`}
-                            className="h-full w-auto max-h-full object-contain transition-transform duration-300 hover:scale-105"
-                          />
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* PASO 3: Rango de precio interactivo (Barra de precio*/}
-            <div className="p-5 bg-[#FDF8F3] border border-[#E8CEAD] rounded-xl space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <span className="text-xs uppercase font-semibold tracking-wider text-black flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-black text-white text-[11px] flex items-center justify-center font-mono">
-                      3
+                      Talla del arreglo
                     </span>
-                    Barra de precio
-                  </span>
-                  <p className="text-[11px] text-[#6B6560] mt-0.5">
-                    Rango para {categoryConfig.name} {size}: S/ {sizeConfig.minPrice} – S/ {sizeConfig.maxPrice}
-                  </p>
-                </div>
+                    <span className="text-[11px] text-[#6B6560]">
+                      Medidas aprox.: <strong className="text-black">{sizeConfig.dimensions}</strong>
+                    </span>
+                  </div>
 
-                {/* Display del precio en Serif grande */}
-                <div className="text-right flex sm:flex-col items-baseline sm:items-end justify-between sm:justify-center">
-                  <span className="text-[10px] uppercase tracking-wider text-[#6B6560] sm:mb-0.5">
-                    Presupuesto
-                  </span>
-                  <span
-                    className="text-2xl sm:text-3xl font-normal text-black tracking-tight"
-                    style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    {(["S", "M", "L", "XL"] as BouquetSize[]).map((sKey) => {
+                      const sCfg = categoryConfig.sizes[sKey];
+                      const isSelected = size === sKey;
+                      return (
+                        <button
+                          key={sKey}
+                          type="button"
+                          onClick={() => handleSizeChange(sKey)}
+                          className={`p-3 rounded-xl border text-center transition-all ${
+                            isSelected
+                              ? "border-black bg-black text-white shadow-md"
+                              : "border-[#E8CEAD] bg-white text-black hover:border-black/60"
+                          }`}
+                        >
+                          <span className="text-lg font-light block mb-0.5" style={{ fontFamily: "Georgia, serif" }}>
+                            Talla {sKey}
+                          </span>
+                          <span
+                            className={`text-[10px] font-medium tracking-wider block mb-1.5 ${
+                              isSelected ? "text-[#E8CEAD]" : "text-[#B8924A]"
+                            }`}
+                          >
+                            {sCfg.badge}
+                          </span>
+                          <span
+                            className={`text-[10px] block border-t pt-1 font-mono leading-tight ${
+                              isSelected ? "text-white/80 border-white/20" : "text-[#6B6560] border-[#E8CEAD]/60"
+                            }`}
+                          >
+                            {sCfg.dimensions}
+                          </span>
+
+                          {/* Silueta de la talla */}
+                          <div className="mt-2 pt-1.5 sm:mt-2.5 sm:pt-2 border-t border-[#E8CEAD]/30 flex flex-col items-center justify-center w-full">
+                            <div
+                              className="relative h-28 sm:h-44 md:h-48 w-full rounded-xl overflow-hidden flex items-center justify-center p-1.5 sm:p-2 border shadow-xs"
+                              style={{
+                                backgroundColor: SILHOUETTE_COLORS[sKey].bg,
+                                borderColor: SILHOUETTE_COLORS[sKey].border,
+                              }}
+                            >
+                              <img
+                                src={`/products/Talla ${sKey}.png`}
+                                alt={`Silueta referencial Talla ${sKey}`}
+                                className="h-full w-auto max-h-full object-contain transition-transform duration-300 hover:scale-105"
+                              />
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : completedSteps.has(2) ? (
+                <div
+                  onClick={() => setActiveStep(2)}
+                  className="p-3.5 bg-[#FAF3EC] border border-[#E8CEAD] rounded-xl flex items-center justify-between cursor-pointer hover:border-black/50 transition-all group shadow-2xs"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="w-6 h-6 rounded-full bg-[#4A6B53] text-white text-xs flex items-center justify-center font-bold shrink-0 shadow-xs">
+                      ✓
+                    </span>
+                    <div className="min-w-0">
+                      <span className="text-[10px] uppercase tracking-wider text-[#6B6560] block font-medium">
+                        Paso 2 · Talla del arreglo
+                      </span>
+                      <span className="text-sm font-medium text-black truncate block">
+                        Talla {size}{" "}
+                        <span className="text-[#6B6560] text-xs font-normal">
+                          ({sizeConfig.dimensions} · {sizeConfig.badge})
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveStep(2);
+                    }}
+                    className="text-[11px] text-[#B8924A] group-hover:text-black font-medium tracking-wide uppercase px-2.5 py-1 rounded-md bg-white border border-[#E8CEAD] shadow-2xs transition-colors shrink-0"
                   >
-                    S/ {price}.00
-                  </span>
-                </div>
-              </div>
-
-              {/* Slider */}
-              <div className="space-y-2 pt-2">
-                <input
-                  id={sliderId}
-                  type="range"
-                  min={sizeConfig.minPrice}
-                  max={sizeConfig.maxPrice}
-                  step={10}
-                  value={price}
-                  onChange={(e) => setPrice(Number(e.target.value))}
-                  className="w-full h-2.5 bg-[#E8CEAD] rounded-lg appearance-none cursor-pointer accent-black"
-                  aria-label="Barra de ajuste de precio"
-                />
-
-                <div className="flex justify-between text-[11px] font-mono text-[#6B6560]">
-                  <span>Mín: S/ {sizeConfig.minPrice}</span>
-                  <span className="text-black font-semibold">Seleccionado: S/ {price}</span>
-                  <span>Máx: S/ {sizeConfig.maxPrice}</span>
-                </div>
-              </div>
-
-              {/* Indicador de Delivery Gratuito */}
-              {isFreeDeliveryEligible ? (
-                <div className="p-2.5 bg-[#4A6B53]/10 border border-[#4A6B53]/30 rounded-lg flex items-center justify-between text-xs text-[#4A6B53]">
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <span>✨</span>
-                    <span>¡Superaste S/ {FREE_DELIVERY_THRESHOLD}! <strong>Envío GRATIS en Lima incluido</strong></span>
-                  </span>
-                  <span className="text-[10px] font-bold bg-[#4A6B53] text-white px-2 py-0.5 rounded-full">
-                    S/ 0
-                  </span>
+                    Cambiar
+                  </button>
                 </div>
               ) : (
-                <p className="text-[11px] text-[#6B6560]">
-                  💡 <em>Sugerencia: Con S/ {FREE_DELIVERY_THRESHOLD - price} más desbloqueas <strong>Envío GRATIS</strong> a todo Lima.</em>
-                </p>
+                <div
+                  onClick={() => setActiveStep(2)}
+                  className="p-3.5 bg-white border border-[#E8CEAD]/70 rounded-xl flex items-center justify-between cursor-pointer hover:border-black/50 transition-all text-[#6B6560] shadow-2xs"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-5 h-5 rounded-full bg-black/10 text-black text-[11px] flex items-center justify-center font-mono">
+                      2
+                    </span>
+                    <span className="text-xs uppercase font-medium tracking-wider text-black">
+                      Talla del arreglo
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-[#B8924A] font-medium flex items-center gap-1">
+                    <span>Elegir</span>
+                    <span>↓</span>
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* PASO 3: Rango de precio interactivo (Barra de precio) */}
+            <div ref={step3Ref} className="scroll-mt-24 sm:scroll-mt-28">
+              {activeStep === 3 ? (
+                <div className="p-5 bg-[#FDF8F3] border border-[#E8CEAD] rounded-xl space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <span className="text-xs uppercase font-semibold tracking-wider text-black flex items-center gap-2">
+                        <span className={`w-5 h-5 rounded-full text-[11px] flex items-center justify-center font-mono transition-colors duration-300 ${
+                          completedSteps.has(3)
+                            ? "bg-[#4A6B53] text-white"
+                            : "bg-black text-white"
+                        }`}>
+                          {completedSteps.has(3) ? "✓" : "3"}
+                        </span>
+                        Barra de precio
+                      </span>
+                      <p className="text-[11px] text-[#6B6560] mt-0.5">
+                        Rango para {categoryConfig.name} {size}: S/ {sizeConfig.minPrice} – S/ {sizeConfig.maxPrice}
+                      </p>
+                    </div>
+
+                    <div className="text-right flex sm:flex-col items-baseline sm:items-end justify-between sm:justify-center">
+                      <span className="text-[10px] uppercase tracking-wider text-[#6B6560] sm:mb-0.5">
+                        Presupuesto
+                      </span>
+                      <span
+                        className="text-2xl sm:text-3xl font-normal text-black tracking-tight"
+                        style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+                      >
+                        S/ {price}.00
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-2">
+                    <input
+                      id={sliderId}
+                      type="range"
+                      min={sizeConfig.minPrice}
+                      max={sizeConfig.maxPrice}
+                      step={10}
+                      value={price}
+                      onChange={(e) => setPrice(Number(e.target.value))}
+                      className="w-full h-2.5 bg-[#E8CEAD] rounded-lg appearance-none cursor-pointer accent-black"
+                      aria-label="Barra de ajuste de precio"
+                    />
+
+                    <div className="flex justify-between text-[11px] font-mono text-[#6B6560]">
+                      <span>Mín: S/ {sizeConfig.minPrice}</span>
+                      <span className="text-black font-semibold">Seleccionado: S/ {price}</span>
+                      <span>Máx: S/ {sizeConfig.maxPrice}</span>
+                    </div>
+                  </div>
+
+                  {isFreeDeliveryEligible ? (
+                    <div className="p-2.5 bg-[#4A6B53]/10 border border-[#4A6B53]/30 rounded-lg flex items-center justify-between text-xs text-[#4A6B53]">
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <span>✨</span>
+                        <span>¡Superaste S/ {FREE_DELIVERY_THRESHOLD}! <strong>Envío GRATIS en Lima incluido</strong></span>
+                      </span>
+                      <span className="text-[10px] font-bold bg-[#4A6B53] text-white px-2 py-0.5 rounded-full">
+                        S/ 0
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-[#6B6560]">
+                      💡 <em>Sugerencia: Con S/ {FREE_DELIVERY_THRESHOLD - price} más desbloqueas <strong>Envío GRATIS</strong> a todo Lima.</em>
+                    </p>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => markStepAndAdvance(3)}
+                    className="w-full py-3 bg-black hover:bg-neutral-800 text-white text-xs uppercase tracking-[0.15em] font-medium rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm active:scale-[0.99]"
+                  >
+                    <span>Continuar a colores</span>
+                    <span>→</span>
+                  </button>
+                </div>
+              ) : completedSteps.has(3) ? (
+                <div
+                  onClick={() => setActiveStep(3)}
+                  className="p-3.5 bg-[#FAF3EC] border border-[#E8CEAD] rounded-xl flex items-center justify-between cursor-pointer hover:border-black/50 transition-all group shadow-2xs"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="w-6 h-6 rounded-full bg-[#4A6B53] text-white text-xs flex items-center justify-center font-bold shrink-0 shadow-xs">
+                      ✓
+                    </span>
+                    <div className="min-w-0">
+                      <span className="text-[10px] uppercase tracking-wider text-[#6B6560] block font-medium">
+                        Paso 3 · Presupuesto
+                      </span>
+                      <span className="text-sm font-medium text-black truncate block">
+                        S/ {price}.00{" "}
+                        <span className="text-[#4A6B53] text-xs font-normal">
+                          ({isFreeDeliveryEligible ? "Envío gratis incluido" : "Envío estándar"})
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveStep(3);
+                    }}
+                    className="text-[11px] text-[#B8924A] group-hover:text-black font-medium tracking-wide uppercase px-2.5 py-1 rounded-md bg-white border border-[#E8CEAD] shadow-2xs transition-colors shrink-0"
+                  >
+                    Cambiar
+                  </button>
+                </div>
+              ) : (
+                <div
+                  onClick={() => setActiveStep(3)}
+                  className="p-3.5 bg-white border border-[#E8CEAD]/70 rounded-xl flex items-center justify-between cursor-pointer hover:border-black/50 transition-all text-[#6B6560] shadow-2xs"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-5 h-5 rounded-full bg-black/10 text-black text-[11px] flex items-center justify-center font-mono">
+                      3
+                    </span>
+                    <span className="text-xs uppercase font-medium tracking-wider text-black">
+                      Presupuesto del arreglo
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-[#B8924A] font-medium flex items-center gap-1">
+                    <span>Elegir</span>
+                    <span>↓</span>
+                  </span>
+                </div>
               )}
             </div>
 
             {/* PASO 4: Selección de Paleta de Colores */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs uppercase font-semibold tracking-wider text-black flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-black text-white text-[11px] flex items-center justify-center font-mono">
-                    4
-                  </span>
-                  Escoge tus colores
-                </span>
-                <span className="text-[11px] text-[#6B6560]">
-                  Seleccionados: <strong>{selectedColors.length}</strong>
-                </span>
-              </div>
-
-              {/* Paletas temáticas sugeridas */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {COLOR_PRESETS.map((preset) => {
-                  const isSelected = selectedPreset === preset.id;
-                  return (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      onClick={() => handlePresetSelect(preset.id)}
-                      className={`p-2.5 rounded-lg border text-left transition-all ${isSelected
-                        ? "border-black bg-[#FAF3EC] ring-1 ring-black"
-                        : "border-[#E8CEAD] bg-white hover:border-black/50"
-                        }`}
-                    >
-                      <div className="flex items-center gap-1.5 mb-1">
-                        {preset.dots.map((dot, idx) => (
-                          <span
-                            key={idx}
-                            className="w-3 h-3 rounded-full border border-black/20"
-                            style={{ backgroundColor: dot }}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-xs font-medium text-black block leading-tight">
-                        {preset.label}
+            <div ref={step4Ref} className="scroll-mt-24 sm:scroll-mt-28">
+              {activeStep === 4 ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs uppercase font-semibold tracking-wider text-black flex items-center gap-2">
+                      <span className={`w-5 h-5 rounded-full text-[11px] flex items-center justify-center font-mono transition-colors duration-300 ${
+                        completedSteps.has(4)
+                          ? "bg-[#4A6B53] text-white"
+                          : "bg-black text-white"
+                      }`}>
+                        {completedSteps.has(4) ? "✓" : "4"}
                       </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Selector de colores individuales */}
-              <div>
-                <label className="block text-[11px] text-[#6B6560] uppercase mb-2">
-                  O elige los tonos individuales que deseas incluir:
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {INDIVIDUAL_COLORS.map((col) => {
-                    const isSelected = selectedColors.includes(col.name);
-                    return (
-                      <button
-                        key={col.name}
-                        type="button"
-                        onClick={() => toggleColor(col.name)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all border ${isSelected
-                          ? "bg-black text-white border-black shadow-sm"
-                          : "bg-white text-black border-[#E8CEAD] hover:border-black/50"
-                          }`}
-                      >
-                        <span
-                          className={`w-3 h-3 rounded-full ${col.border ? "border border-black/30" : ""
-                            }`}
-                          style={{ backgroundColor: col.color }}
-                        />
-                        <span>{col.name}</span>
-                        {isSelected && <span className="text-[10px]">✓</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Notas personalizadas */}
-              <div>
-                <label className="block text-[11px] text-[#6B6560] uppercase mb-1">
-                  Notas para la florista (opcional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej. Prefiero más rosas rosadas, estilo silvestre, sin lirios..."
-                  value={customNotes}
-                  onChange={(e) => setCustomNotes(e.target.value)}
-                  className="w-full text-xs px-3 py-2 border border-[#E8CEAD] focus:outline-none focus:border-black bg-white placeholder:text-[#6B6560]/60"
-                  maxLength={150}
-                />
-              </div>
-
-              {/* Sección: Subir foto de ramo de referencia */}
-              <div className="pt-4 border-t border-[#F3E2CE] space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="block text-[11px] text-[#6B6560] uppercase font-semibold">
-                    📸 Foto de tu ramo de referencia (opcional)
-                  </label>
-                  {referenceImage && (
-                    <span className="text-[10px] text-[#4A6B53] font-medium flex items-center gap-1">
-                      <span>✓</span> Foto cargada
+                      Escoge tus colores
                     </span>
-                  )}
-                </div>
-                <p className="text-[11px] text-[#6B6560] leading-relaxed">
-                  ¿Tienes una foto de Pinterest, Instagram o un ramo que viste? Súbela aquí para que nuestra florista la tome como referencia estética al armar tu diseño.
-                </p>
+                    <span className="text-[11px] text-[#6B6560]">
+                      Seleccionados: <strong>{selectedColors.length}</strong>
+                    </span>
+                  </div>
 
-                <input
-                  ref={referenceInputRef}
-                  type="file"
-                  accept="image/png, image/jpeg, image/webp"
-                  onChange={handleReferenceUpload}
-                  className="hidden"
-                  id="bouquet-reference-upload"
-                />
+                  {/* Paletas temáticas sugeridas */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {COLOR_PRESETS.map((preset) => {
+                      const isSelected = selectedPreset === preset.id;
+                      return (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => handlePresetSelect(preset.id)}
+                          className={`p-2.5 rounded-lg border text-left transition-all ${
+                            isSelected
+                              ? "border-black bg-[#FAF3EC] ring-1 ring-black"
+                              : "border-[#E8CEAD] bg-white hover:border-black/50"
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 mb-1">
+                            {preset.dots.map((dot, idx) => (
+                              <span
+                                key={idx}
+                                className="w-3 h-3 rounded-full border border-black/20"
+                                style={{ backgroundColor: dot }}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-xs font-medium text-black block leading-tight">
+                            {preset.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
 
-                {referenceImage ? (
-                  <div className="p-3 bg-[#FAF3EC] border border-[#E8CEAD] rounded-xl flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-14 h-14 relative rounded-lg border border-[#E8CEAD] bg-white overflow-hidden flex-shrink-0 shadow-sm">
-                        <img
-                          src={referenceImage}
-                          alt="Ramo de referencia"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium text-black truncate">
-                          {referenceFileName || "ramo-referencia.jpg"}
-                        </p>
-                        <p className="text-[10px] text-[#4A6B53]">
-                          ✓ Lista para la florista en tu pedido
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => referenceInputRef.current?.click()}
-                        className="text-[11px] text-black hover:underline uppercase tracking-wider font-medium"
-                      >
-                        Cambiar
-                      </button>
-                      <span className="text-[#E8CEAD]">·</span>
-                      <button
-                        type="button"
-                        onClick={handleRemoveReference}
-                        className="text-[11px] text-red-600 hover:underline uppercase tracking-wider font-medium"
-                      >
-                        Quitar
-                      </button>
+                  {/* Selector de colores individuales */}
+                  <div>
+                    <label className="block text-[11px] text-[#6B6560] uppercase mb-2">
+                      O elige los tonos individuales que deseas incluir:
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {INDIVIDUAL_COLORS.map((col) => {
+                        const isSelected = selectedColors.includes(col.name);
+                        return (
+                          <button
+                            key={col.name}
+                            type="button"
+                            onClick={() => toggleColor(col.name)}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all border ${
+                              isSelected
+                                ? "bg-black text-white border-black shadow-sm"
+                                : "bg-white text-black border-[#E8CEAD] hover:border-black/50"
+                            }`}
+                          >
+                            <span
+                              className={`w-3 h-3 rounded-full ${
+                                col.border ? "border border-black/30" : ""
+                              }`}
+                              style={{ backgroundColor: col.color }}
+                            />
+                            <span>{col.name}</span>
+                            {isSelected && <span className="text-[10px]">✓</span>}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
-                ) : (
-                  <label
-                    htmlFor="bouquet-reference-upload"
-                    className="w-full py-4 px-4 border border-dashed border-[#B8924A] rounded-xl bg-[#FDF8F3] hover:bg-[#FAF3EC] cursor-pointer flex flex-col items-center justify-center gap-1.5 transition-colors text-center group"
-                  >
-                    <div className="w-9 h-9 rounded-full bg-white border border-[#E8CEAD] flex items-center justify-center text-[#B8924A] group-hover:scale-105 transition-transform shadow-xs">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                        <circle cx="8.5" cy="8.5" r="1.5" />
-                        <polyline points="21 15 16 10 5 21" />
-                      </svg>
+
+                  {/* Notas personalizadas */}
+                  <div>
+                    <label className="block text-[11px] text-[#6B6560] uppercase mb-1">
+                      Notas para la florista (opcional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Prefiero más rosas rosadas, estilo silvestre, sin lirios..."
+                      value={customNotes}
+                      onChange={(e) => setCustomNotes(e.target.value)}
+                      className="w-full text-xs px-3 py-2 border border-[#E8CEAD] focus:outline-none focus:border-black bg-white placeholder:text-[#6B6560]/60"
+                      maxLength={150}
+                    />
+                  </div>
+
+                  {/* Sección: Subir foto de ramo de referencia */}
+                  <div className="pt-4 border-t border-[#F3E2CE] space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-[11px] text-[#6B6560] uppercase font-semibold">
+                        📸 Foto de tu ramo de referencia (opcional)
+                      </label>
+                      {referenceImage && (
+                        <span className="text-[10px] text-[#4A6B53] font-medium flex items-center gap-1">
+                          <span>✓</span> Foto cargada
+                        </span>
+                      )}
                     </div>
-                    <span className="text-xs font-medium text-black">
-                      Subir foto o captura del ramo de referencia
+                    <p className="text-[11px] text-[#6B6560] leading-relaxed">
+                      ¿Tienes una foto de Pinterest, Instagram o un ramo que viste? Súbela aquí para que nuestra florista la tome como referencia estética al armar tu diseño.
+                    </p>
+
+                    <input
+                      ref={referenceInputRef}
+                      type="file"
+                      accept="image/png, image/jpeg, image/webp"
+                      onChange={handleReferenceUpload}
+                      className="hidden"
+                      id="bouquet-reference-upload"
+                    />
+
+                    {referenceImage ? (
+                      <div className="p-3 bg-[#FAF3EC] border border-[#E8CEAD] rounded-xl flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-14 h-14 relative rounded-lg border border-[#E8CEAD] bg-white overflow-hidden flex-shrink-0 shadow-sm">
+                            <img
+                              src={referenceImage}
+                              alt="Ramo de referencia"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium text-black truncate">
+                              {referenceFileName || "ramo-referencia.jpg"}
+                            </p>
+                            <p className="text-[10px] text-[#4A6B53]">
+                              ✓ Lista para la florista en tu pedido
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => referenceInputRef.current?.click()}
+                            className="text-[11px] text-black hover:underline uppercase tracking-wider font-medium"
+                          >
+                            Cambiar
+                          </button>
+                          <span className="text-[#E8CEAD]">·</span>
+                          <button
+                            type="button"
+                            onClick={handleRemoveReference}
+                            className="text-[11px] text-red-600 hover:underline uppercase tracking-wider font-medium"
+                          >
+                            Quitar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <label
+                        htmlFor="bouquet-reference-upload"
+                        className="w-full py-4 px-4 border border-dashed border-[#B8924A] rounded-xl bg-[#FDF8F3] hover:bg-[#FAF3EC] cursor-pointer flex flex-col items-center justify-center gap-1.5 transition-colors text-center group"
+                      >
+                        <div className="w-9 h-9 rounded-full bg-white border border-[#E8CEAD] flex items-center justify-center text-[#B8924A] group-hover:scale-105 transition-transform shadow-xs">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.6"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                            <circle cx="8.5" cy="8.5" r="1.5" />
+                            <polyline points="21 15 16 10 5 21" />
+                          </svg>
+                        </div>
+                        <span className="text-xs font-medium text-black">
+                          Subir foto o captura del ramo de referencia
+                        </span>
+                        <span className="text-[10px] text-[#6B6560]">
+                          Formatos JPG, PNG, WEBP (hasta 10MB)
+                        </span>
+                      </label>
+                    )}
+                  </div>
+
+                  {/* Botón para finalizar / ver resumen */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCompletedSteps((prev) => new Set(prev).add(4));
+                      setActiveStep(0);
+                      summaryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }}
+                    className="w-full py-3.5 bg-[#4A6B53] hover:bg-[#3D5A44] text-white text-xs uppercase tracking-[0.15em] font-medium rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm active:scale-[0.99]"
+                  >
+                    <span>✓ Listo · Ver ramo completo y pedir</span>
+                  </button>
+                </div>
+              ) : completedSteps.has(4) ? (
+                <div
+                  onClick={() => setActiveStep(4)}
+                  className="p-3.5 bg-[#FAF3EC] border border-[#E8CEAD] rounded-xl flex items-center justify-between cursor-pointer hover:border-black/50 transition-all group shadow-2xs"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="w-6 h-6 rounded-full bg-[#4A6B53] text-white text-xs flex items-center justify-center font-bold shrink-0 shadow-xs">
+                      ✓
                     </span>
-                    <span className="text-[10px] text-[#6B6560]">
-                      Formatos JPG, PNG, WEBP (hasta 10MB)
+                    <div className="min-w-0">
+                      <span className="text-[10px] uppercase tracking-wider text-[#6B6560] block font-medium">
+                        Paso 4 · Paleta de color & detalles
+                      </span>
+                      <span className="text-sm font-medium text-black truncate block">
+                        {colorSummary}{" "}
+                        {referenceImage && (
+                          <span className="text-[#4A6B53] text-xs font-normal">
+                            · 📸 Foto adjunta
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveStep(4);
+                    }}
+                    className="text-[11px] text-[#B8924A] group-hover:text-black font-medium tracking-wide uppercase px-2.5 py-1 rounded-md bg-white border border-[#E8CEAD] shadow-2xs transition-colors shrink-0"
+                  >
+                    Cambiar
+                  </button>
+                </div>
+              ) : (
+                <div
+                  onClick={() => setActiveStep(4)}
+                  className="p-3.5 bg-white border border-[#E8CEAD]/70 rounded-xl flex items-center justify-between cursor-pointer hover:border-black/50 transition-all text-[#6B6560] shadow-2xs"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-5 h-5 rounded-full bg-black/10 text-black text-[11px] flex items-center justify-center font-mono">
+                      4
                     </span>
-                  </label>
-                )}
-              </div>
+                    <span className="text-xs uppercase font-medium tracking-wider text-black">
+                      Escoge tus colores
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-[#B8924A] font-medium flex items-center gap-1">
+                    <span>Elegir</span>
+                    <span>↓</span>
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Columna Derecha: Vista previa, resumen y botones de acción (5 cols) */}
-          <div className="lg:col-span-5 sticky top-28 space-y-6">
+          <div ref={summaryRef} className="lg:col-span-5 sticky top-28 space-y-6 scroll-mt-24 sm:scroll-mt-28">
             <div className="bg-white rounded-2xl overflow-hidden border border-[#E8CEAD] shadow-xl">
               {/* Imagen referencial completa sin recortes (object-contain + ambient blur) */}
               <div className="relative h-60 sm:h-72 w-full bg-[#FAF3EC] overflow-hidden flex items-center justify-center">
@@ -920,41 +992,7 @@ export default function CustomBouquet() {
                   </p>
                 </div>
 
-                {/* Lista de flores incluidas en esta talla + Imagen referencial a la derecha */}
-                <div className="p-3 bg-[#FDF8F3] border border-[#E8CEAD] rounded-xl">
-                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-                    {/* Lado izquierdo: Lista de flores */}
-                    <div className="sm:col-span-7">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-[10px] uppercase tracking-widest text-[#B8924A] font-semibold">
-                          🌸 Incluye esta talla
-                        </p>
-                        <span className="text-[10px] text-[#6B6560] font-mono">
-                          {sizeConfig.dimensions}
-                        </span>
-                      </div>
-                      <ul className="space-y-1">
-                        {sizeConfig.flowers.map((flower, i) => (
-                          <li key={i} className="text-xs text-[#3A3530] flex items-start gap-1.5">
-                            <span className="text-[#B8924A] mt-0.5 leading-none">·</span>
-                            <span>{flower}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
 
-                    {/* Lado derecho: Imagen de Contenido referencial (más compacto en móvil) */}
-                    <div className="sm:col-span-5 sm:border-l sm:border-[#E8CEAD]/60 sm:pl-3 flex items-center justify-center pt-2 sm:pt-0 border-t sm:border-t-0 border-[#E8CEAD]/40">
-                      <div className="relative w-36 xs:w-40 sm:w-full max-w-[160px] sm:max-w-none aspect-[3/2] rounded-lg overflow-hidden flex items-center justify-center bg-white/90 p-1 border border-[#E8CEAD]/50 shadow-2xs mx-auto sm:mx-0">
-                        <img
-                          src="/products/contenido-referencial.jpg"
-                          alt="Contenido referencial, el arte puede variar"
-                          className="w-full h-full object-contain rounded"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
                 {/* Ficha de especificaciones */}
                 <div className="p-3.5 bg-[#FDF8F3] border border-[#E8CEAD] rounded-xl space-y-2 text-xs">
@@ -1046,6 +1084,134 @@ export default function CustomBouquet() {
                   >
                     S/ {price}.00
                   </span>
+                </div>
+
+                {/* ═══ Vista previa con IA ═══ */}
+                <div className="space-y-2.5">
+                  <button
+                    type="button"
+                    onClick={handleGeneratePreview}
+                    disabled={isGeneratingPreview}
+                    className="group w-full relative overflow-hidden rounded-xl border border-[#B8924A]/60 bg-gradient-to-r from-[#FDF8F3] to-[#FAF3EC] px-4 py-3 text-xs font-medium uppercase tracking-[0.12em] text-[#B8924A] transition-all hover:border-[#B8924A] hover:shadow-md active:scale-[0.99] disabled:opacity-70 disabled:cursor-wait flex items-center justify-center gap-2.5"
+                  >
+                    {isGeneratingPreview ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-[#B8924A]/30 border-t-[#B8924A] rounded-full animate-spin" />
+                        <span>Creando tu vista previa con IA…</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          className="text-[#B8924A]"
+                        >
+                          <path
+                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <span>✨ Generar vista previa con IA</span>
+                      </>
+                    )}
+                    <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-[#B8924A]/10 to-transparent group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                  </button>
+
+                  {previewError && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 leading-relaxed space-y-1">
+                      <p className="font-medium">⚠️ {previewError}</p>
+                      {previewError.includes("GEMINI_API_KEY") && (
+                        <p className="text-[11px] text-red-600">
+                          Agrega tu clave en el archivo <code className="bg-red-100 px-1 py-0.5 rounded font-mono">.env.local</code> (GEMINI_API_KEY=tu_clave) y reinicia el servidor.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {previewImage && (
+                    <div className="relative rounded-xl overflow-hidden border border-[#E8CEAD] shadow-md bg-white">
+                      <div className="relative aspect-[3/4] w-full bg-[#FAF3EC] overflow-hidden flex items-center justify-center">
+                        <img
+                          src={previewImage}
+                          alt="Vista previa generada con IA de tu ramo personalizado"
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 pointer-events-none">
+                        <span className="px-2.5 py-1 bg-[#B8924A]/90 backdrop-blur-md text-white text-[9px] uppercase tracking-widest font-semibold rounded-full shadow-md">
+                          ✨ Preview IA
+                        </span>
+                      </div>
+                      <div className="p-3 bg-[#FDF8F3] border-t border-[#E8CEAD]/60 space-y-2">
+                        <p className="text-[10px] text-[#6B6560] leading-relaxed text-center">
+                          Imagen referencial generada por IA según tus selecciones · El ramo real será confeccionado artesanalmente por nuestras floristas.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReferenceImage(previewImage);
+                            setReferenceFileName("vista-previa-ia.jpg");
+                          }}
+                          className="w-full py-2 px-3 bg-white hover:bg-[#FAF3EC] border border-[#B8924A] text-[#B8924A] hover:text-black rounded-lg text-xs font-medium tracking-wide flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
+                        >
+                          <span>📸</span>
+                          <span>
+                            {referenceImage === previewImage
+                              ? "✓ Adjunta como foto de referencia"
+                              : "Usar como foto de referencia para la florista"}
+                          </span>
+                        </button>
+                      </div>
+                      <div className="absolute top-2.5 right-2.5 flex gap-1.5">
+                        <button
+                          type="button"
+                          onClick={handleGeneratePreview}
+                          disabled={isGeneratingPreview}
+                          className="w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm text-[#6B6560] hover:text-black flex items-center justify-center shadow-sm transition-colors disabled:opacity-50"
+                          title="Regenerar otra versión"
+                        >
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <polyline points="23 4 23 10 17 10" />
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewImage(null)}
+                          className="w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm text-[#6B6560] hover:text-black flex items-center justify-center shadow-sm transition-colors"
+                          title="Cerrar vista previa"
+                        >
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Botón 1: Agregar al Carrito */}
