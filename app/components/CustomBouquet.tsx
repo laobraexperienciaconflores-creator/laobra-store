@@ -73,6 +73,10 @@ export default function CustomBouquet() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  // Selección con la que se generó la vista previa (para avisar si quedó desactualizada)
+  const [previewConfigKey, setPreviewConfigKey] = useState<string | null>(null);
+  const currentConfigKey = JSON.stringify([category, size, selectedPreset, [...selectedColors].sort()]);
+  const isPreviewStale = previewImage !== null && previewConfigKey !== currentConfigKey;
 
   // ── Tracking de paso activo y pasos completados con minimización ──
   const [activeStep, setActiveStep] = useState<number>(1);
@@ -82,14 +86,6 @@ export default function CustomBouquet() {
   const step3Ref = useRef<HTMLDivElement>(null);
   const step4Ref = useRef<HTMLDivElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
-
-  const stepRefs: Record<number, React.RefObject<HTMLDivElement | null>> = {
-    1: step1Ref,
-    2: step2Ref,
-    3: step3Ref,
-    4: step4Ref,
-    5: summaryRef,
-  };
 
   const markStepAndAdvance = useCallback((stepNumber: number) => {
     setCompletedSteps((prev) => {
@@ -102,14 +98,29 @@ export default function CustomBouquet() {
     const nextStep = stepNumber < 4 ? stepNumber + 1 : 0;
     setActiveStep(nextStep);
 
-    // Scroll suave al siguiente paso o resumen
-    const nextRef = stepRefs[stepNumber + 1];
+    // Scroll suave al siguiente paso o resumen (los refs son estables)
+    const stepRefs = [step1Ref, step2Ref, step3Ref, step4Ref, summaryRef];
+    const nextRef = stepRefs[stepNumber]; // índice 0-based → siguiente paso
     if (nextRef?.current) {
       setTimeout(() => {
         nextRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 150);
     }
   }, []);
+
+  // Props para las filas colapsadas: clic o teclado (Enter/Espacio) reabren el paso
+  const openStepProps = (step: number) => ({
+    role: "button" as const,
+    tabIndex: 0,
+    "aria-expanded": false,
+    onClick: () => setActiveStep(step),
+    onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        setActiveStep(step);
+      }
+    },
+  });
 
   const handleReferenceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -142,6 +153,7 @@ export default function CustomBouquet() {
   const handleGeneratePreview = async () => {
     setIsGeneratingPreview(true);
     setPreviewError(null);
+    const requestKey = currentConfigKey;
 
     try {
       // Solo se envían identificadores; el servidor arma el prompt con su propia configuración
@@ -166,6 +178,7 @@ export default function CustomBouquet() {
       const data = await res.json();
       // Comprimir: la imagen original de Gemini pesa 1–2 MB y saturaría el carrito
       setPreviewImage(await compressImageDataUrl(data.image));
+      setPreviewConfigKey(requestKey);
     } catch (err) {
       console.error("Preview generation failed:", err);
       setPreviewError(
@@ -356,12 +369,14 @@ export default function CustomBouquet() {
                 </div>
               ) : (
                 <div
-                  onClick={() => setActiveStep(1)}
+                  {...openStepProps(1)}
                   className="p-3.5 bg-[#FAF3EC] border border-[#E8CEAD] rounded-xl flex items-center justify-between cursor-pointer hover:border-black/50 transition-all group shadow-2xs"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="w-6 h-6 rounded-full bg-[#4A6B53] text-white text-xs flex items-center justify-center font-bold shrink-0 shadow-xs">
-                      ✓
+                    <span className={`w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold shrink-0 shadow-xs ${
+                      completedSteps.has(1) ? "bg-[#4A6B53] text-white" : "bg-black/10 text-black font-mono"
+                    }`}>
+                      {completedSteps.has(1) ? "✓" : "1"}
                     </span>
                     <div className="min-w-0">
                       <span className="text-[10px] uppercase tracking-wider text-[#6B6560] block font-medium">
@@ -375,16 +390,9 @@ export default function CustomBouquet() {
                       </span>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveStep(1);
-                    }}
-                    className="text-[11px] text-[#B8924A] group-hover:text-black font-medium tracking-wide uppercase px-2.5 py-1 rounded-md bg-white border border-[#E8CEAD] shadow-2xs transition-colors shrink-0"
-                  >
+                  <span className="text-[11px] text-[#B8924A] group-hover:text-black font-medium tracking-wide uppercase px-2.5 py-1 rounded-md bg-white border border-[#E8CEAD] shadow-2xs transition-colors shrink-0">
                     Cambiar
-                  </button>
+                  </span>
                 </div>
               )}
             </div>
@@ -465,7 +473,7 @@ export default function CustomBouquet() {
                 </div>
               ) : completedSteps.has(2) ? (
                 <div
-                  onClick={() => setActiveStep(2)}
+                  {...openStepProps(2)}
                   className="p-3.5 bg-[#FAF3EC] border border-[#E8CEAD] rounded-xl flex items-center justify-between cursor-pointer hover:border-black/50 transition-all group shadow-2xs"
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -484,20 +492,13 @@ export default function CustomBouquet() {
                       </span>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveStep(2);
-                    }}
-                    className="text-[11px] text-[#B8924A] group-hover:text-black font-medium tracking-wide uppercase px-2.5 py-1 rounded-md bg-white border border-[#E8CEAD] shadow-2xs transition-colors shrink-0"
-                  >
+                  <span className="text-[11px] text-[#B8924A] group-hover:text-black font-medium tracking-wide uppercase px-2.5 py-1 rounded-md bg-white border border-[#E8CEAD] shadow-2xs transition-colors shrink-0">
                     Cambiar
-                  </button>
+                  </span>
                 </div>
               ) : (
                 <div
-                  onClick={() => setActiveStep(2)}
+                  {...openStepProps(2)}
                   className="p-3.5 bg-white border border-[#E8CEAD]/70 rounded-xl flex items-center justify-between cursor-pointer hover:border-black/50 transition-all text-[#6B6560] shadow-2xs"
                 >
                   <div className="flex items-center gap-3">
@@ -597,7 +598,7 @@ export default function CustomBouquet() {
                 </div>
               ) : completedSteps.has(3) ? (
                 <div
-                  onClick={() => setActiveStep(3)}
+                  {...openStepProps(3)}
                   className="p-3.5 bg-[#FAF3EC] border border-[#E8CEAD] rounded-xl flex items-center justify-between cursor-pointer hover:border-black/50 transition-all group shadow-2xs"
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -616,20 +617,13 @@ export default function CustomBouquet() {
                       </span>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveStep(3);
-                    }}
-                    className="text-[11px] text-[#B8924A] group-hover:text-black font-medium tracking-wide uppercase px-2.5 py-1 rounded-md bg-white border border-[#E8CEAD] shadow-2xs transition-colors shrink-0"
-                  >
+                  <span className="text-[11px] text-[#B8924A] group-hover:text-black font-medium tracking-wide uppercase px-2.5 py-1 rounded-md bg-white border border-[#E8CEAD] shadow-2xs transition-colors shrink-0">
                     Cambiar
-                  </button>
+                  </span>
                 </div>
               ) : (
                 <div
-                  onClick={() => setActiveStep(3)}
+                  {...openStepProps(3)}
                   className="p-3.5 bg-white border border-[#E8CEAD]/70 rounded-xl flex items-center justify-between cursor-pointer hover:border-black/50 transition-all text-[#6B6560] shadow-2xs"
                 >
                   <div className="flex items-center gap-3">
@@ -858,7 +852,7 @@ export default function CustomBouquet() {
                 </div>
               ) : completedSteps.has(4) ? (
                 <div
-                  onClick={() => setActiveStep(4)}
+                  {...openStepProps(4)}
                   className="p-3.5 bg-[#FAF3EC] border border-[#E8CEAD] rounded-xl flex items-center justify-between cursor-pointer hover:border-black/50 transition-all group shadow-2xs"
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -879,20 +873,13 @@ export default function CustomBouquet() {
                       </span>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveStep(4);
-                    }}
-                    className="text-[11px] text-[#B8924A] group-hover:text-black font-medium tracking-wide uppercase px-2.5 py-1 rounded-md bg-white border border-[#E8CEAD] shadow-2xs transition-colors shrink-0"
-                  >
+                  <span className="text-[11px] text-[#B8924A] group-hover:text-black font-medium tracking-wide uppercase px-2.5 py-1 rounded-md bg-white border border-[#E8CEAD] shadow-2xs transition-colors shrink-0">
                     Cambiar
-                  </button>
+                  </span>
                 </div>
               ) : (
                 <div
-                  onClick={() => setActiveStep(4)}
+                  {...openStepProps(4)}
                   className="p-3.5 bg-white border border-[#E8CEAD]/70 rounded-xl flex items-center justify-between cursor-pointer hover:border-black/50 transition-all text-[#6B6560] shadow-2xs"
                 >
                   <div className="flex items-center gap-3">
@@ -1148,6 +1135,11 @@ export default function CustomBouquet() {
                         </span>
                       </div>
                       <div className="p-3 bg-[#FDF8F3] border-t border-[#E8CEAD]/60 space-y-2">
+                        {isPreviewStale && (
+                          <p className="text-[11px] text-[#8A5A00] bg-[#FFF4D6] border border-[#F0D58A] rounded-md px-2 py-1.5 text-center">
+                            Cambiaste tu selección después de generar esta imagen. Pulsa ↻ para actualizarla.
+                          </p>
+                        )}
                         <p className="text-[10px] text-[#6B6560] leading-relaxed text-center">
                           Imagen referencial generada por IA según tus selecciones · El ramo real será confeccionado artesanalmente por nuestras floristas.
                         </p>
