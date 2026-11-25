@@ -979,8 +979,6 @@ export default function CustomBouquet() {
                   </p>
                 </div>
 
-
-
                 {/* Ficha de especificaciones */}
                 <div className="p-3.5 bg-[#FDF8F3] border border-[#E8CEAD] rounded-xl space-y-2 text-xs">
                   <div className="flex justify-between">
