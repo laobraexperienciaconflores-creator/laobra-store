@@ -74,7 +74,13 @@ export default function CustomBouquet() {
   const [previewError, setPreviewError] = useState<string | null>(null);
   // Selección con la que se generó la vista previa (para avisar si quedó desactualizada)
   const [previewConfigKey, setPreviewConfigKey] = useState<string | null>(null);
-  const currentConfigKey = JSON.stringify([category, size, selectedPreset, [...selectedColors].sort()]);
+  const currentConfigKey = JSON.stringify([
+    category,
+    size,
+    selectedPreset,
+    [...selectedColors].sort(),
+    customNotes.trim(),
+  ]);
   const isPreviewStale = previewImage !== null && previewConfigKey !== currentConfigKey;
 
   // ── Tracking de paso activo y pasos completados con minimización ──
@@ -164,6 +170,8 @@ export default function CustomBouquet() {
           size,
           colors: selectedColors,
           preset: selectedPreset,
+          // Preferencias del cliente; el servidor las limpia y las trata solo como preferencias
+          notes: customNotes.trim(),
         }),
       });
 

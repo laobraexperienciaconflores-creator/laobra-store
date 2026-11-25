@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   // Fotos del catálogo que la vista previa con IA envía a Gemini como referencia de estilo
   outputFileTracingIncludes: {
-    "/api/preview-bouquet": ["./public/products/*.jpg"],
+    "/api/preview-bouquet": ["./public/products/*.jpg", "./public/brand/*.jpg"],
   },
   partialPrefetching: true,
   images: {
