@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useCart } from "../context/CartContext";
 import { WHATSAPP_NUMBER } from "../lib/constants";
+import { getCustomerName, useCustomer } from "../lib/useCustomer";
 
 const COUPON_CODE = 'LAOBRA01';
 
@@ -18,6 +19,10 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { totalCount, openCart, applyCoupon, appliedCoupon, isFirstDiscountUsed } = useCart();
+
+  const { user, loading: userLoading } = useCustomer();
+  const accountHref = user ? "/cuenta" : "/cuenta/ingresar";
+  const accountLabel = user ? getCustomerName(user).split(" ")[0] || "Mi cuenta" : "Ingresar";
 
   const isAlreadyClaimed = Boolean(appliedCoupon && appliedCoupon.code === COUPON_CODE);
 
@@ -188,6 +193,18 @@ export default function Header() {
 
           {/* Right CTA Actions: Cart & WhatsApp */}
           <div className="flex items-center gap-3 sm:gap-4">
+            {/* Cuenta del cliente */}
+            <Link
+              href={accountHref}
+              className={`flex items-center gap-2 p-2.5 sm:px-3 sm:py-2 text-xs tracking-widest uppercase text-black hover:opacity-60 transition-opacity ${
+                userLoading ? "opacity-0 pointer-events-none" : ""
+              }`}
+              aria-label={user ? "Mi cuenta" : "Ingresar o crear cuenta"}
+            >
+              <UserIcon />
+              <span className="hidden lg:inline font-medium max-w-[9rem] truncate">{accountLabel}</span>
+            </Link>
+
             {/* Cart Trigger Button */}
             <button
               onClick={openCart}
@@ -308,6 +325,26 @@ export default function Header() {
         </ul>
       </div>
     </header>
+  );
+}
+
+function UserIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="17"
+      height="17"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
+    </svg>
   );
 }
 

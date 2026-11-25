@@ -3,6 +3,7 @@ import "./globals.css";
 import { CartProvider } from "./context/CartContext";
 import CartDrawer from "./components/CartDrawer";
 import WhatsAppButton from "./components/WhatsAppButton";
+import AccountSync from "./components/AccountSync";
 
 
 export const metadata: Metadata = {
@@ -30,6 +31,7 @@ export default function RootLayout({
         <CartProvider>
           {children}
           <CartDrawer />
+          <AccountSync />
           {/* Botón flotante de WhatsApp */}
           <WhatsAppButton />
         </CartProvider>

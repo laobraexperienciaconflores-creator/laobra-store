@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
+import { createClient as createSessionClient } from "../../lib/supabaseServer";
 
 const BUCKET = "payment-vouchers";
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -253,32 +254,54 @@ export async function POST(request: Request) {
       )
     );
 
-    const { data, error } = await supabase
-      .from("orders")
-      .insert([
-        {
-          total_amount: amount,
-          currency: "PEN",
-          buyer_name: orderDetails.buyerName.trim(),
-          buyer_phone: orderDetails.buyerPhone?.trim() || null,
-          recipient_name: orderDetails.recipientName.trim(),
-          recipient_phone: orderDetails.recipientPhone?.trim() || null,
-          delivery_address: formattedAddress,
-          delivery_reference: fullReference,
-          delivery_date: orderDetails.deliveryDate || null,
-          delivery_time: orderDetails.deliveryTime || "10:00 AM",
-          dedication: orderDetails.dedication?.trim() || null,
-          dedication_from: orderDetails.dedicationFrom?.trim() || null,
-          payment_method: paymentMethod || "yape_plin",
-          payment_status: initialPaymentStatus,
-          operation_number: operationNumber?.trim() || null,
-          voucher_url: voucherPath,
-          items: processedItems,
-          status: "pendiente",
-        },
-      ])
-      .select("id, order_number, public_token")
-      .single();
+    // Si el cliente inició sesión, el pedido queda en su historial ("Mi cuenta")
+    let userId: string | null = null;
+    try {
+      const sessionClient = await createSessionClient();
+      const { data: authData } = await sessionClient.auth.getUser();
+      userId = authData.user?.id ?? null;
+    } catch {
+      userId = null;
+    }
+
+    const orderRow = {
+      total_amount: amount,
+      currency: "PEN",
+      buyer_name: orderDetails.buyerName.trim(),
+      buyer_phone: orderDetails.buyerPhone?.trim() || null,
+      recipient_name: orderDetails.recipientName.trim(),
+      recipient_phone: orderDetails.recipientPhone?.trim() || null,
+      delivery_address: formattedAddress,
+      delivery_reference: fullReference,
+      delivery_date: orderDetails.deliveryDate || null,
+      delivery_time: orderDetails.deliveryTime || "10:00 AM",
+      dedication: orderDetails.dedication?.trim() || null,
+      dedication_from: orderDetails.dedicationFrom?.trim() || null,
+      payment_method: paymentMethod || "yape_plin",
+      payment_status: initialPaymentStatus,
+      operation_number: operationNumber?.trim() || null,
+      voucher_url: voucherPath,
+      items: processedItems,
+      status: "pendiente",
+    };
+
+    const db = supabase;
+    const insertOrder = (row: Record<string, unknown>) =>
+      db
+        .from("orders")
+        .insert([row])
+        .select("id, order_number, public_token")
+        .single();
+
+    let { data, error } = await insertOrder(
+      userId ? { ...orderRow, user_id: userId } : orderRow
+    );
+
+    // Si aún no se corrió la migración de user_id, no bloquear la venta
+    if (error && userId && /user_id/.test(error.message)) {
+      console.warn("orders.user_id no existe todavía; guardando pedido sin vincular a la cuenta");
+      ({ data, error } = await insertOrder(orderRow));
+    }
 
     if (error) {
       console.error("Error al registrar pedido:", error.message);
