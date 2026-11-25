@@ -8,6 +8,9 @@ import { getCustomerName, useCustomer } from "../lib/useCustomer";
 
 const COUPON_CODE = 'LAOBRA01';
 
+// Cuentas de clientes: listas pero ocultas por ahora. Cambiar a true para mostrar "Ingresar".
+const SHOW_ACCOUNT_LINK = false;
+
 const navLinks = [
   { href: "#inicio", label: "Inicio" },
   { href: "#catalogo", label: "Catálogo" },
@@ -193,7 +196,8 @@ export default function Header() {
 
           {/* Right CTA Actions: Cart & WhatsApp */}
           <div className="flex items-center gap-3 sm:gap-4">
-            {/* Cuenta del cliente */}
+            {/* Cuenta del cliente (oculta por ahora, ver SHOW_ACCOUNT_LINK) */}
+            {SHOW_ACCOUNT_LINK && (
             <Link
               href={accountHref}
               className={`flex items-center gap-2 p-2.5 sm:px-3 sm:py-2 text-xs tracking-widest uppercase text-black hover:opacity-60 transition-opacity ${
@@ -204,6 +208,7 @@ export default function Header() {
               <UserIcon />
               <span className="hidden lg:inline font-medium max-w-[9rem] truncate">{accountLabel}</span>
             </Link>
+            )}
 
             {/* Cart Trigger Button */}
             <button

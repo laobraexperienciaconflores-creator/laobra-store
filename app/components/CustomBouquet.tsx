@@ -46,6 +46,9 @@ function compressImageDataUrl(src: string, maxDim = 800, quality = 0.78): Promis
   });
 }
 
+// Imagen referencial del ramo en el resumen: oculta por ahora. Cambiar a true para mostrarla.
+const SHOW_SUMMARY_IMAGE = false;
+
 export default function CustomBouquet() {
   const { addItem, openCart } = useCart();
   const sliderId = useId();
@@ -878,7 +881,8 @@ export default function CustomBouquet() {
           {/* Columna Derecha: Vista previa, resumen y botones de acción (5 cols) */}
           <div ref={summaryRef} className="lg:col-span-5 sticky top-28 space-y-6 scroll-mt-24 sm:scroll-mt-28">
             <div className="bg-white rounded-2xl overflow-hidden border border-[#E8CEAD] shadow-xl">
-              {/* Imagen referencial completa sin recortes (object-contain + ambient blur) */}
+              {/* Imagen referencial completa sin recortes (oculta por ahora, ver SHOW_SUMMARY_IMAGE) */}
+              {SHOW_SUMMARY_IMAGE && (
               <div className="relative h-60 sm:h-72 w-full bg-[#FAF3EC] overflow-hidden flex items-center justify-center">
                 {/* Fondo difuminado ambiental con los tonos florales para que se vea sofisticado */}
                 <div className="absolute inset-0 overflow-hidden opacity-25 filter blur-xl scale-125 pointer-events-none">
@@ -937,6 +941,7 @@ export default function CustomBouquet() {
                   </span>
                 </div>
               </div>
+              )}
 
               {/* Resumen del Ramo Configurado */}
               <div className="p-5 space-y-3.5">
