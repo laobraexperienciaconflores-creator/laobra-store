@@ -3,6 +3,12 @@
 import { useEffect, useState } from "react";
 import { WHATSAPP_NUMBER, WHATSAPP_DISPLAY } from "../lib/constants";
 
+// Ubicación de la tienda: Av. Roca y Boloña 825, Lima 15048
+const MAPS_EMBED_URL =
+  "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d289.934664334057!2d-77.01352405725449!3d-12.120340445787644!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9105c8064cce3d11%3A0xf14ad5c68ef32bcc!2sAv%20Roca%20y%20Bolo%C3%B1a%20825%2C%20Lima%2015048!5e0!3m2!1ses-419!2spe!4v1795622488174!5m2!1ses-419!2spe";
+const MAPS_LINK =
+  "https://www.google.com/maps/search/?api=1&query=Av%20Roca%20y%20Bolo%C3%B1a%20825%2C%20Lima%2015048";
+
 export default function Footer() {
   const [currentYear, setCurrentYear] = useState(2026);
 
@@ -37,7 +43,7 @@ export default function Footer() {
     >
       <div className="mx-auto max-w-7xl">
         <div
-          className="grid grid-cols-1 gap-14 border-b pb-14 md:grid-cols-3"
+          className="grid grid-cols-1 gap-14 border-b pb-14 md:grid-cols-2 lg:grid-cols-[1fr_0.8fr_1fr_1.4fr] lg:gap-10"
           style={{ borderColor: "rgba(255,255,255,0.1)" }}
         >
           <div className="flex flex-col gap-6">
@@ -182,14 +188,45 @@ export default function Footer() {
                   Ubicación
                 </p>
 
-                <p
-                  className="text-sm font-light"
+                <a
+                  href={MAPS_LINK}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-light transition-opacity hover:opacity-60"
                   style={{ color: "rgba(255,255,255,0.8)" }}
+                  aria-label="Abrir la ubicación de LA OBRA en Google Maps"
                 >
-                  Lima, Perú
-                </p>
+                  Av. Roca y Boloña 825, Lima 15048 ↗
+                </a>
               </li>
             </ul>
+          </div>
+
+          {/* Mapa a la derecha de Contacto */}
+          <div>
+            <p
+              className="mb-5 text-xs uppercase tracking-widest"
+              style={{
+                color: "rgba(255,255,255,0.4)",
+                letterSpacing: "0.2em",
+              }}
+            >
+              Encuéntranos
+            </p>
+
+            <div
+              className="aspect-[4/3] w-full overflow-hidden rounded-lg border"
+              style={{ borderColor: "rgba(255,255,255,0.1)" }}
+            >
+              <iframe
+                src={MAPS_EMBED_URL}
+                title="Mapa de ubicación de LA OBRA"
+                className="h-full w-full border-0"
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="strict-origin-when-cross-origin"
+              />
+            </div>
           </div>
         </div>
 

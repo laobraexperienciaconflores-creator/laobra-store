@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
     agentFeedback: true,
   },
   cacheComponents: true,
+  // Fotos del catálogo que la vista previa con IA envía a Gemini como referencia de estilo
+  outputFileTracingIncludes: {
+    "/api/preview-bouquet": ["./public/products/*.jpg"],
+  },
   partialPrefetching: true,
   images: {
     qualities: [75, 80, 85],

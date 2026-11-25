@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import {
   BOUQUET_CONFIGS,
   COLOR_PRESETS,
@@ -22,11 +24,18 @@ import {
 export const maxDuration = 60;
 
 // Modelos candidatos que soportan generación de imágenes en Google AI Studio
+// Orden: calidad/precio primero, luego respaldos menos saturados.
 const CANDIDATE_MODELS = [
-  "gemini-3.1-flash-image",         // estable, rápido
-  "gemini-3.1-flash-image-preview", // respaldo
-  "gemini-3-pro-image",             // mayor calidad, más lento/caro
+  "gemini-3.1-flash-image",      // principal: rápido y buena calidad
+  "gemini-3.1-flash-lite-image", // más barato, suele tener menos demanda
+  "gemini-2.5-flash-image",      // generación anterior, muy disponible
+  "gemini-3-pro-image",          // mayor calidad, más lento/caro
 ];
+
+// Estados temporales de Google (alta demanda, error interno): vale la pena reintentar
+const RETRYABLE_STATUS = new Set([500, 503]);
+const MAX_PASSES = 2;
+const RETRY_DELAY_MS = 1_500;
 
 // Errores que no se arreglan probando otro modelo (clave inválida, sin permiso, o límite 0 en Free Tier)
 const FATAL_STATUS = new Set([400, 401, 403, 429]);
@@ -175,20 +184,47 @@ export async function POST(request: Request) {
         ? filteredFlowers.join(", ")
         : "flores frescas selectas de temporada";
 
-    const prompt = `A professional editorial florist photograph of a hand-tied artisanal bouquet from a luxury floral studio in Lima, Peru.
-The bouquet is ${sizeDesc} (scale approximately ${sizeConfig.dimensions}).
-Style & Category: ${categoryDesc}.
-Color palette: strictly dominated by ${colorDesc} tones.
-Floral composition includes: ${flowerDesc}, artistically arranged with fresh greenery and wrapped in elegant natural kraft paper or cream linen tied with a subtle ribbon.
-Lighting & Background: warm soft daylight studio setting on a clean neutral beige or warm cream background.
-Centered composition, straight or 3/4 angle, showing full volume.
-No text, no watermarks, no hands, no people. Just the stunning artisan bouquet.`;
+    // ── Fotos reales de LA OBRA como guía de estilo ──
+    const references = await loadReferenceImages([
+      sizeConfig.imageUrl,
+      BOUQUET_CONFIGS[category].imageUrl,
+      ...STYLE_FALLBACK_IMAGES,
+    ]);
+
+    const prompt = `Eres fotógrafo de producto de LA OBRA, una florería artesanal de autor en Lima, Perú.
+${references.length > 0 ? `Te adjunto ${references.length} fotos reales de ramos de LA OBRA. Úsalas como guía obligatoria de ESTILO y PRESENTACIÓN, no de flores ni colores:
+- Misma presentación: el ramo apoyado sobre el mismo soporte metálico negro de patas delgadas, visto de frente y ligeramente desde arriba.
+- Mismo fondo: estudio con fondo continuo gris muy claro / blanco y piso claro, luz de día suave y difusa, sombras suaves.
+- Misma envoltura: papel coreano en varias capas con bordes amplios, lazo de cinta en la base y un pequeño sticker redondo discreto en el papel.
+- Mismo encuadre vertical y misma calidad de foto de catálogo.
+` : ""}
+Crea UN ramo NUEVO con estas características elegidas por el cliente:
+- Categoría: ${categoryDesc}.
+- Tamaño: ${sizeDesc} (medidas aproximadas: ${sizeConfig.dimensions}).
+- Paleta de color: SOLO flores en tonos ${colorDesc} (más el verde del follaje). No agregues flores de otros colores, aunque aparezcan en las fotos de referencia. El papel de la envoltura debe armonizar con esa paleta.
+- Flores principales: ${flowerDesc}, con follaje fresco (eucalipto, ruscus o similar).
+
+Reglas: no copies un ramo de las fotos de referencia; sin personas, sin manos, sin texto legible, sin marcas de agua ni logotipos inventados. Fotografía realista, nada de ilustración.`;
 
     const errors: string[] = [];
     const deadline = Date.now() + TOTAL_BUDGET_MS;
 
-    // Probar los modelos candidatos en orden
-    for (const model of CANDIDATE_MODELS) {
+    // Probar los modelos candidatos en orden; si todos estaban saturados, una segunda vuelta
+    const attempts = Array.from({ length: MAX_PASSES }, (_, pass) =>
+      CANDIDATE_MODELS.map((model) => ({ model, pass }))
+    ).flat();
+    let fatal = false;
+    let onlyTransient = true;
+
+    for (const { model, pass } of attempts) {
+      if (fatal) break;
+      if (pass > 0) {
+        if (!onlyTransient) break; // fallos no temporales: no tiene sentido repetir
+        if (model === CANDIDATE_MODELS[0]) {
+          await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+        }
+      }
+
       const remaining = deadline - Date.now();
       if (remaining < MIN_ATTEMPT_MS) {
         errors.push(`${model}: omitido (sin tiempo restante)`);
@@ -204,8 +240,20 @@ No text, no watermarks, no hands, no people. Just the stunning artisan bouquet.`
             "x-goog-api-key": apiKey,
           },
           body: JSON.stringify({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-            generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
+            contents: [
+              {
+                role: "user",
+                parts: [
+                  ...references.map((r) => ({ inlineData: { mimeType: r.mimeType, data: r.data } })),
+                  { text: prompt },
+                ],
+              },
+            ],
+            generationConfig: {
+              responseModalities: ["IMAGE", "TEXT"],
+              // Vertical, igual que el recuadro de la vista previa en la tienda
+              imageConfig: { aspectRatio: "3:4" },
+            },
           }),
           signal: AbortSignal.timeout(remaining),
         });
@@ -248,7 +296,11 @@ No text, no watermarks, no hands, no people. Just the stunning artisan bouquet.`
             );
           }
 
-          if (FATAL_STATUS.has(response.status)) break;
+          if (FATAL_STATUS.has(response.status)) {
+            fatal = true;
+            break;
+          }
+          if (!RETRYABLE_STATUS.has(response.status)) onlyTransient = false;
           continue;
         }
 
@@ -272,6 +324,7 @@ No text, no watermarks, no hands, no people. Just the stunning artisan bouquet.`
           parts.find((p) => p.text)?.text?.slice(0, 200) ||
           "respuesta sin imagen";
         errors.push(`${model}: sin imagen (${reason})`);
+        onlyTransient = false;
       } catch (subErr) {
         console.warn(`Error trying model ${model}:`, subErr);
         errors.push(`${model}: ${subErr instanceof Error ? subErr.message : String(subErr)}`);
@@ -303,4 +356,38 @@ function extractMessage(errText: string): string {
   } catch {
     return errText.slice(0, 300);
   }
+}
+
+// Fotos de catálogo usadas como respaldo de estilo si faltara alguna de la talla/categoría
+const STYLE_FALLBACK_IMAGES = ["/products/bruma.jpg", "/products/silencio.jpg"];
+const MAX_REFERENCE_IMAGES = 2;
+
+type ReferenceImage = { mimeType: string; data: string };
+const referenceCache = new Map<string, ReferenceImage | null>();
+
+// Lee fotos de /public (incluidas en el bundle vía outputFileTracingIncludes en next.config)
+async function loadReferenceImages(urls: string[]): Promise<ReferenceImage[]> {
+  const unique = [...new Set(urls)].filter((u) => /^\/products\/[^/]+\.(jpe?g|png|webp)$/i.test(u));
+  const result: ReferenceImage[] = [];
+
+  for (const url of unique) {
+    if (result.length >= MAX_REFERENCE_IMAGES) break;
+
+    if (!referenceCache.has(url)) {
+      try {
+        const file = await readFile(path.join(process.cwd(), "public", url));
+        const ext = path.extname(url).toLowerCase();
+        const mimeType = ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : "image/jpeg";
+        referenceCache.set(url, { mimeType, data: file.toString("base64") });
+      } catch (e) {
+        console.warn(`Preview bouquet: no se pudo leer la referencia ${url}:`, e);
+        referenceCache.set(url, null);
+      }
+    }
+
+    const ref = referenceCache.get(url);
+    if (ref) result.push(ref);
+  }
+
+  return result;
 }
