@@ -493,10 +493,10 @@ export default function CartDrawer() {
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-6 sm:pl-10">
         <div
           ref={drawerRef}
-          className="w-screen max-w-lg bg-[#FFFFFF] shadow-2xl flex flex-col justify-between border-l border-[#F3E2CE] animate-in slide-in-from-right duration-300"
+          className="w-screen max-w-lg h-full max-h-full overflow-hidden bg-[#FFFFFF] shadow-2xl flex flex-col border-l border-[#F3E2CE] animate-in slide-in-from-right duration-300"
         >
           {/* Header */}
-          <div className="px-6 py-4 border-b border-[#F3E2CE] flex items-center justify-between bg-[#FDF8F3]">
+          <div className="shrink-0 px-6 py-4 border-b border-[#F3E2CE] flex items-center justify-between bg-[#FDF8F3]">
             <div className="flex items-center gap-3">
               <h2
                 id="cart-heading"
@@ -536,7 +536,7 @@ export default function CartDrawer() {
 
           {/* Navigation Steps / Tabs */}
           {items.length > 0 && (
-            <div className="grid grid-cols-3 border-b border-[#F3E2CE] bg-[#FAF3EC] text-[11px] uppercase tracking-wider font-medium text-center">
+            <div className="shrink-0 grid grid-cols-3 border-b border-[#F3E2CE] bg-[#FAF3EC] text-[11px] uppercase tracking-wider font-medium text-center">
               <button
                 onClick={() => {
                   setActiveTab("items");
@@ -575,7 +575,7 @@ export default function CartDrawer() {
 
           {/* Banner / Barra de progreso de Envío Gratis */}
           {items.length > 0 && (
-            <div className="px-6 py-2.5 bg-[#FAF3EC] border-b border-[#F3E2CE]">
+            <div className="shrink-0 px-6 py-2.5 bg-[#FAF3EC] border-b border-[#F3E2CE]">
               {isFreeDelivery ? (
                 <div className="flex items-center justify-between text-xs text-[#4A6B53] font-medium">
                   <span className="flex items-center gap-1.5">
@@ -608,7 +608,7 @@ export default function CartDrawer() {
           )}
 
           {/* Content Area */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 py-6">
             {items.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center py-12">
                 <div
@@ -1299,7 +1299,7 @@ export default function CartDrawer() {
 
           {/* Footer Checkout Area */}
           {items.length > 0 && (
-            <div className="p-6 bg-[#FDF8F3] border-t border-[#F3E2CE] space-y-4">
+            <div className="shrink-0 p-6 bg-[#FDF8F3] border-t border-[#F3E2CE] space-y-4">
               {/* Sección de Cupón de Descuento */}
               <div className="p-3 bg-white border border-[#E8CEAD] rounded-lg">
                 {appliedCoupon ? (

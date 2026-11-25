@@ -127,7 +127,7 @@ export default function ProductCard({
       <div>
         {/* Image / Video wrapper */}
         <div
-          className="relative aspect-[3/4] overflow-hidden mb-5 transition-transform duration-500 ease-out cursor-pointer select-none"
+          className="relative aspect-[3/4] overflow-hidden mb-5 transition-transform duration-500 ease-out cursor-pointer select-none touch-pan-y"
           style={{ background: "#F3E2CE" }}
           onClick={handleAddToCart}
           onTouchStart={handleTouchStart}
