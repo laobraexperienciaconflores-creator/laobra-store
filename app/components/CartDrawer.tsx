@@ -287,10 +287,13 @@ export default function CartDrawer() {
       message += `• ${item.quantity}x ${item.name} — S/ ${(item.price * item.quantity).toFixed(2)}\n`;
       if (
         item.referenceImage ||
-        item.imageUrl?.startsWith("data:") ||
+        (item.imageUrl?.startsWith("data:") && item.imageUrl !== item.previewImage) ||
         item.imageUrl?.includes("references")
       ) {
-        message += `  └ 📸 Foto de referencia adjunta para el florista (ver en boleta)\n`;
+        message += `  └ 📸 Foto de referencia adjunta para el florista (ver en la compra)\n`;
+      }
+      if (item.previewImage) {
+        message += `  └ ✨ Vista previa IA del ramo (ver en la compra)\n`;
       }
     });
     message += "\n";
@@ -361,7 +364,7 @@ export default function CartDrawer() {
     const hasReference = items.some(
       (i) =>
         i.referenceImage ||
-        i.imageUrl?.startsWith("data:") ||
+        (i.imageUrl?.startsWith("data:") && i.imageUrl !== i.previewImage) ||
         i.imageUrl?.includes("references")
     );
     if (hasReference) {
@@ -374,7 +377,7 @@ export default function CartDrawer() {
       window.location.origin;
     const invoiceUrl = `${baseUrl}/orders/${generatedPublicToken}`;
 
-    message += `🧾 *Ver boleta / factura oficial:* ${invoiceUrl}\n\n`;
+    message += `🧾 *Ver compra:* ${invoiceUrl}\n\n`;
     message += `Enviado desde www.laobra.pe`;
 
     const encoded = encodeURIComponent(message);

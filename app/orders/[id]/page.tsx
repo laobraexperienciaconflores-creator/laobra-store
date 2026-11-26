@@ -97,6 +97,18 @@ export default async function OrderPage({ params }: OrderPageProps) {
                     }
                 } catch {}
             }
+            const preview = item.previewImage;
+            if (preview && !preview.startsWith("http") && !preview.startsWith("data:")) {
+                try {
+                    const { data: signedPreview } = await supabase.storage
+                        .from("payment-vouchers")
+                        .createSignedUrl(preview, 3600);
+                    if (signedPreview?.signedUrl) {
+                        item.previewImage = signedPreview.signedUrl;
+                        if (item.imageUrl === preview) item.imageUrl = signedPreview.signedUrl;
+                    }
+                } catch {}
+            }
         }
     }
 

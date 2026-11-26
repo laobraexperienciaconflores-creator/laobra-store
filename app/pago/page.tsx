@@ -50,19 +50,19 @@ function PaymentResultContent() {
     if (estado === "aprobado") {
       msg = `¡Hola LA OBRA! 🌸 Acabo de pagar con Mercado Pago mi pedido *#${pedido}*.\n\n`;
       if (fullBoletaUrl) {
-        msg += `🧾 Mi boleta: ${fullBoletaUrl}\n\n`;
+        msg += `🧾 Mi compra: ${fullBoletaUrl}\n\n`;
       }
       msg += `¿Podrían confirmarme la programación de la entrega?`;
     } else if (estado === "rechazado") {
       msg = `¡Hola LA OBRA! 🌸 Tuve un problema con el pago de mi pedido *#${pedido}* en Mercado Pago (figura rechazado).\n\n`;
       if (fullBoletaUrl) {
-        msg += `🧾 Mi boleta: ${fullBoletaUrl}\n\n`;
+        msg += `🧾 Mi compra: ${fullBoletaUrl}\n\n`;
       }
       msg += `¿Podrían ayudarme a regularizarlo por Yape/Plin o transferencia para no perder mi pedido?`;
     } else {
       msg = `¡Hola LA OBRA! Tengo una consulta sobre el estado de mi pedido *#${pedido}*.\n\n`;
       if (fullBoletaUrl) {
-        msg += `🧾 Mi boleta: ${fullBoletaUrl}\n\n`;
+        msg += `🧾 Mi compra: ${fullBoletaUrl}\n\n`;
       }
     }
     window.open(
@@ -128,7 +128,7 @@ function PaymentResultContent() {
                   href={boletaUrl}
                   className="block w-full py-3.5 text-xs uppercase tracking-[0.2em] font-medium bg-black text-white hover:bg-black/85 transition-colors text-center"
                 >
-                  Ver boleta de compra
+                  Ver compra
                 </Link>
               )}
               <button

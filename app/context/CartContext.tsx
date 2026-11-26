@@ -14,6 +14,8 @@ export interface CartItem {
   imageUrl: string;
   quantity: number;
   referenceImage?: string;
+  /** Vista previa generada con IA del ramo personalizado */
+  previewImage?: string;
 }
 
 export interface Coupon {
@@ -71,7 +73,7 @@ interface CartContextType {
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
-  addItem: (product: { id: string; name: string; price: number; imageUrl: string; referenceImage?: string }) => void;
+  addItem: (product: { id: string; name: string; price: number; imageUrl: string; referenceImage?: string; previewImage?: string }) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, delta: number) => void;
   clearCart: () => void;
@@ -193,7 +195,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const closeCart = () => setIsOpen(false);
   const toggleCart = () => setIsOpen((prev) => !prev);
 
-  const addItem = (product: { id: string; name: string; price: number; imageUrl: string; referenceImage?: string }) => {
+  const addItem = (product: { id: string; name: string; price: number; imageUrl: string; referenceImage?: string; previewImage?: string }) => {
     setItems((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {

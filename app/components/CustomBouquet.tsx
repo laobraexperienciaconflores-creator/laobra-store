@@ -273,15 +273,18 @@ export default function CustomBouquet() {
     const customId = `custom-${category}-${size}-${price}-${Date.now()}`;
     const notes = customNotes.trim();
     // La ocasión y las notas viajan en el nombre del producto para que la florista las vea en el pedido
-    const customName = `Ramo Personalizado · ${categoryConfig.name} (${size} · ${sizeConfig.dimensions}) [${colorSummary}] · Ocasión: ${occasionLabel}${notes ? ` · Notas: ${notes}` : ""}${referenceImage ? " 📸 (Con referencia)" : ""
+    // La vista previa IA solo se adjunta si corresponde a la selección actual
+    const aiPreview = previewImage && !isPreviewStale ? previewImage : null;
+    const customName = `Ramo Personalizado · ${categoryConfig.name} (${size} · ${sizeConfig.dimensions}) [${colorSummary}] · Ocasión: ${occasionLabel}${notes ? ` · Notas: ${notes}` : ""}${aiPreview ? " ✨ (Con vista previa IA)" : ""}${referenceImage ? " 📸 (Con referencia)" : ""
       }`;
 
     addItem({
       id: customId,
       name: customName,
       price: price,
-      imageUrl: referenceImage || categoryConfig.imageUrl,
+      imageUrl: aiPreview || referenceImage || categoryConfig.imageUrl,
       referenceImage: referenceImage || undefined,
+      previewImage: aiPreview || undefined,
     });
 
     setIsAdded(true);
@@ -304,7 +307,7 @@ export default function CustomBouquet() {
             className="text-xs tracking-[0.35em] uppercase mb-3 text-[#6B6560]"
             style={{ letterSpacing: "0.3em" }}
           >
-            Taller Floral Artesanal · Barranco
+            Taller floral artesanal digital
           </p>
           <h2
             id="custom-title"
@@ -314,7 +317,7 @@ export default function CustomBouquet() {
             Personaliza tu ramo
           </h2>
           <p className="mt-4 text-sm sm:text-base text-[#3A3530] font-light leading-relaxed">
-            Elige la categoría, el tamaño y la paleta de colores.
+            Personaliza y crea tu ramo en tiempo real
           </p>
         </div>
 
@@ -1187,21 +1190,11 @@ export default function CustomBouquet() {
                         <p className="text-[10px] text-[#6B6560] leading-relaxed text-center">
                           Imagen referencial generada por IA según tus selecciones · El ramo real será confeccionado artesanalmente por nuestras floristas.
                         </p>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setReferenceImage(previewImage);
-                            setReferenceFileName("vista-previa-ia.jpg");
-                          }}
-                          className="w-full py-2 px-3 bg-white hover:bg-[#FAF3EC] border border-[#B8924A] text-[#B8924A] hover:text-black rounded-lg text-xs font-medium tracking-wide flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
-                        >
-                          <span>📸</span>
-                          <span>
-                            {referenceImage === previewImage
-                              ? "✓ Adjunta como foto de referencia"
-                              : "Usar como foto de referencia para la florista"}
-                          </span>
-                        </button>
+                        {!isPreviewStale && (
+                          <p className="text-[11px] text-[#4A6B53] font-medium text-center">
+                            ✓ Esta imagen se agregará a tu carrito y a tu compra
+                          </p>
+                        )}
                       </div>
                       <div className="absolute top-2.5 right-2.5 flex gap-1.5">
                         <button

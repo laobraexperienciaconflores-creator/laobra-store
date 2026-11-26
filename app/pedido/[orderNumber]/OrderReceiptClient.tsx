@@ -12,6 +12,8 @@ export interface OrderItem {
   quantity: number;
   imageUrl?: string;
   referenceImage?: string;
+  /** Vista previa generada con IA del ramo personalizado */
+  previewImage?: string;
   discountAmount?: number;
   couponCode?: string;
   discountPercentage?: number;
@@ -265,6 +267,11 @@ export default function OrderReceiptPage({
       })
       .filter((ref): ref is { url: string; name: string } => Boolean(ref)) || [];
 
+  const previewItems =
+    order?.items
+      ?.filter((item) => Boolean(item.previewImage))
+      .map((item) => ({ url: item.previewImage as string, name: item.name })) || [];
+
   useEffect(() => {
     if (hasDiscount) {
       try {
@@ -505,6 +512,51 @@ export default function OrderReceiptPage({
               </div>
             </div>
           </div>
+
+          {/* 1.4. Vista previa IA del ramo personalizado */}
+          {previewItems.length > 0 && (
+            <div className="p-4 sm:p-5 bg-[#FAF3EC] border border-[#E8CEAD] rounded-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs uppercase font-semibold text-black tracking-wider flex items-center gap-2">
+                  <span>✨</span> Vista previa de tu ramo
+                </span>
+                <span className="px-2 py-0.5 bg-[#B8924A] text-white text-[10px] font-semibold uppercase tracking-wider rounded-full shadow-xs">
+                  Generada con IA
+                </span>
+              </div>
+              <p className="text-xs text-[#6B6560] leading-relaxed">
+                Imagen referencial creada con tus selecciones. Nuestras floristas confeccionan el ramo a mano, por lo que el resultado final puede variar ligeramente.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {previewItems.map((preview, idx) => (
+                  <div key={idx} className="rounded-xl overflow-hidden border border-[#E8CEAD] bg-white p-3 shadow-xs">
+                    <div className="relative aspect-[3/4] w-full rounded-lg bg-[#FDF8F3] overflow-hidden flex items-center justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- URL firmada externa */}
+                      <img
+                        src={preview.url}
+                        alt={`Vista previa IA: ${preview.name}`}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <div className="mt-2.5 flex items-center justify-between text-xs gap-2">
+                      <span className="font-medium text-black truncate" title={preview.name}>
+                        {preview.name}
+                      </span>
+                      <a
+                        href={preview.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#B8924A] hover:underline font-semibold inline-flex items-center gap-1 text-[11px] flex-shrink-0"
+                      >
+                        <span>Ver imagen completa</span>
+                        <span>↗</span>
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* 1.5. Foto(s) de referencia del cliente para el taller de flores */}
           {referenceItems.length > 0 && (

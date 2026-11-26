@@ -182,52 +182,61 @@ export async function POST(request: Request) {
             quantity: number;
             imageUrl?: string;
             referenceImage?: string;
+            previewImage?: string;
           },
           index: number
         ) => {
-          let referenceImageUrl =
-            item.referenceImage ||
-            (item.imageUrl?.startsWith("data:") ? item.imageUrl : null);
-          let finalImageUrl = item.imageUrl;
-
-          if (
-            referenceImageUrl &&
-            referenceImageUrl.startsWith("data:") &&
-            supabase
-          ) {
+          // Sube a Storage cada imagen en base64 (foto de referencia y vista previa IA)
+          // por separado, para que una no reemplace a la otra.
+          const uploaded = new Map<string, string>();
+          const persistImage = async (value: string | undefined | null, folder: string) => {
+            if (!value || !value.startsWith("data:") || !supabase) return value || null;
+            const cached = uploaded.get(value);
+            if (cached) return cached;
             try {
-              const match = referenceImageUrl.match(
+              const match = value.match(
                 /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]*={0,2})$/
               );
-              if (match) {
-                const mimeType = match[1] as AllowedMime;
-                const buffer = Buffer.from(match[2], "base64");
-                const ext = ALLOWED_TYPES[mimeType] || "jpg";
-                const refFilePath = `references/${randomUUID()}.${ext}`;
+              if (!match) return null;
+              const mimeType = match[1] as AllowedMime;
+              const buffer = Buffer.from(match[2], "base64");
+              const ext = ALLOWED_TYPES[mimeType] || "jpg";
+              const filePath = `${folder}/${randomUUID()}.${ext}`;
 
-                const { error: refUploadError } = await supabase.storage
-                  .from(BUCKET)
-                  .upload(refFilePath, buffer, {
-                    contentType: mimeType,
-                    upsert: false,
-                  });
-
-                if (!refUploadError) {
-                  const { data: signedData } = await supabase.storage
-                    .from(BUCKET)
-                    .createSignedUrl(refFilePath, 60 * 60 * 24 * 365); // 1 año
-
-                  const permanentUrl = signedData?.signedUrl || refFilePath;
-                  referenceImageUrl = permanentUrl;
-                  if (finalImageUrl?.startsWith("data:")) {
-                    finalImageUrl = permanentUrl;
-                  }
-                }
+              const { error: uploadImageError } = await supabase.storage
+                .from(BUCKET)
+                .upload(filePath, buffer, { contentType: mimeType, upsert: false });
+              if (uploadImageError) {
+                console.error(`Error al subir imagen (${folder}):`, uploadImageError.message);
+                return value; // se conserva la imagen original
               }
+
+              const { data: signedData } = await supabase.storage
+                .from(BUCKET)
+                .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 año
+              const permanentUrl = signedData?.signedUrl || filePath;
+              uploaded.set(value, permanentUrl);
+              return permanentUrl;
             } catch (e) {
-              console.error("Error al guardar imagen de referencia en Supabase:", e);
+              console.error(`Error al guardar imagen (${folder}) en Supabase:`, e);
+              return value;
             }
-          }
+          };
+
+          const previewImageUrl = await persistImage(item.previewImage, "previews");
+          const referenceImageUrl = await persistImage(
+            item.referenceImage ||
+              (item.imageUrl?.startsWith("data:") && item.imageUrl !== item.previewImage
+                ? item.imageUrl
+                : null),
+            "references"
+          );
+          // La miniatura del producto: vista previa IA, si no la foto de referencia
+          const finalImageUrl =
+            item.imageUrl?.startsWith("data:")
+              ? (item.imageUrl === item.previewImage ? previewImageUrl : referenceImageUrl) ??
+                undefined
+              : item.imageUrl;
 
           return {
             id: item.id,
@@ -236,6 +245,7 @@ export async function POST(request: Request) {
             quantity: Number(item.quantity),
             imageUrl: finalImageUrl,
             referenceImage: referenceImageUrl || null,
+            previewImage: previewImageUrl || null,
             ...(index === 0
               ? {
                   discountAmount: Number(discountAmount) || 0,
