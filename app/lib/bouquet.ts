@@ -208,55 +208,36 @@ export const BOUQUET_CONFIGS: Record<BouquetCategory, CategoryConfig> = {
     },
   },
 };
-export const COLOR_PRESETS = [
-  {
-    id: "romantico",
-    label: "Romántico & Pastel",
-    description: "Rosa, rubor, blanco & toques marfil",
-    dots: ["#F8BBD0", "#FFFFFF", "#E1BEE7"],
-  },
-  {
-    id: "calido",
-    label: "Cálido & Atardecer",
-    description: "Mandarina, durazno, coral & terracota",
-    dots: ["#FF8A65", "#FFCC80", "#FFE082"],
-  },
-  {
-    id: "sereno",
-    label: "Blanco & Marfil",
-    description: "Blanco puro, crema & follaje verde eucalipto",
-    dots: ["#FFFFFF", "#F5F5DC", "#A5D6A7"],
-  },
-  {
-    id: "pasion",
-    label: "Pasión & Vino",
-    description: "Rojo profundo, borgoña, escarlata & vino",
-    dots: ["#B71C1C", "#880E4F", "#C2185B"],
-  },
-  {
-    id: "mistico",
-    label: "Místico & Silvestre",
-    description: "Lila, lavanda, toques azules & flores silvestres",
-    dots: ["#CE93D8", "#90CAF9", "#80CBC4"],
-  },
-  {
-    id: "sorpresa",
-    label: "Sorpresa del Florista",
-    description: "La mejor selección y combinación armónica del día",
-    dots: ["#B8924A", "#4A6B53", "#F3E2CE"],
-  },
-];
+// Ocasión del ramo. "otro" permite que el cliente escriba la suya.
+export const OCCASIONS = [
+  { id: "romantico", label: "Romántico", icon: "♡" },
+  { id: "cumpleanos", label: "Cumpleaños", icon: "✦" },
+  { id: "aniversario", label: "Aniversario", icon: "∞" },
+  { id: "agradecimiento", label: "Agradecimiento", icon: "✿" },
+  { id: "felicitaciones", label: "Felicitaciones", icon: "★" },
+  { id: "recuperacion", label: "Pronta recuperación", icon: "☼" },
+  { id: "condolencias", label: "Condolencias", icon: "❀" },
+  { id: "otro", label: "Otro", icon: "✎" },
+] as const;
+
+export type OccasionId = (typeof OCCASIONS)[number]["id"];
+export const OTHER_OCCASION_MAX_LENGTH = 40;
+
+/** Máximo de colores de flores que puede elegir el cliente. */
+export const MAX_FLOWER_COLORS = 3;
 
 export const INDIVIDUAL_COLORS = [
   { name: "Blanco", color: "#FFFFFF", border: true },
   { name: "Rosado", color: "#EC407A" },
   { name: "Rosa Pastel", color: "#F48FB1" },
   { name: "Fucsia", color: "#D81B60" },
+  { name: "Rojo", color: "#C62828" },
   { name: "Rojo Vino", color: "#880E4F" },
   { name: "Morado", color: "#6A1B9A" },
   { name: "Lila / Violeta", color: "#CE93D8" },
   { name: "Naranja", color: "#FB8C00" },
   { name: "Durazno", color: "#FFAB91" },
+  { name: "Terracota", color: "#C2603E" },
   { name: "Amarillo", color: "#FFE082" },
   { name: "Azul", color: "#90CAF9" },
   { name: "Negro", color: "#1A1A1A" },

@@ -2,14 +2,18 @@
 
 import { useState, useId, useRef, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useCart } from "../context/CartContext";
 import { FREE_DELIVERY_THRESHOLD } from "../lib/delivery";
 import {
   BOUQUET_CONFIGS,
-  COLOR_PRESETS,
+  OCCASIONS,
   INDIVIDUAL_COLORS,
+  MAX_FLOWER_COLORS,
+  OTHER_OCCASION_MAX_LENGTH,
   type BouquetCategory,
   type BouquetSize,
+  type OccasionId,
 } from "../lib/bouquet";
 
 const SILHOUETTE_COLORS: Record<BouquetSize, { bg: string; border: string }> = {
@@ -60,11 +64,17 @@ export default function CustomBouquet() {
   const sizeConfig = categoryConfig.sizes[size];
 
   const [price, setPrice] = useState<number>(sizeConfig.defaultPrice);
-  const [selectedPreset, setSelectedPreset] = useState<string>("romantico");
+  const [selectedOccasion, setSelectedOccasion] = useState<OccasionId>("romantico");
+  const [otherOccasion, setOtherOccasion] = useState<string>("");
   const [selectedColors, setSelectedColors] = useState<string[]>([
     "Rosa Pastel",
     "Blanco",
   ]);
+  const [colorLimitHit, setColorLimitHit] = useState(false);
+  const occasionLabel =
+    selectedOccasion === "otro"
+      ? otherOccasion.trim() || "Otra ocasión"
+      : OCCASIONS.find((o) => o.id === selectedOccasion)?.label ?? "";
   const [customNotes, setCustomNotes] = useState<string>("");
   const [isAdded, setIsAdded] = useState(false);
   const referenceInputRef = useRef<HTMLInputElement>(null);
@@ -75,12 +85,16 @@ export default function CustomBouquet() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  // Cupo diario de vistas previas (5 con cuenta, 1 sin cuenta): lo informa el servidor
+  const [previewRemaining, setPreviewRemaining] = useState<number | null>(null);
+  const [showAccountCta, setShowAccountCta] = useState(false);
   // Selección con la que se generó la vista previa (para avisar si quedó desactualizada)
   const [previewConfigKey, setPreviewConfigKey] = useState<string | null>(null);
   const currentConfigKey = JSON.stringify([
     category,
     size,
-    selectedPreset,
+    selectedOccasion,
+    selectedOccasion === "otro" ? otherOccasion.trim() : "",
     [...selectedColors].sort(),
     customNotes.trim(),
   ]);
@@ -161,6 +175,7 @@ export default function CustomBouquet() {
   const handleGeneratePreview = async () => {
     setIsGeneratingPreview(true);
     setPreviewError(null);
+    setShowAccountCta(false);
     const requestKey = currentConfigKey;
 
     try {
@@ -172,7 +187,8 @@ export default function CustomBouquet() {
           category,
           size,
           colors: selectedColors,
-          preset: selectedPreset,
+          occasion: selectedOccasion,
+          occasionText: selectedOccasion === "otro" ? otherOccasion.trim() : "",
           // Preferencias del cliente; el servidor las limpia y las trata solo como preferencias
           notes: customNotes.trim(),
         }),
@@ -180,6 +196,10 @@ export default function CustomBouquet() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
+        if (err.code === "quota") {
+          setPreviewRemaining(0);
+          setShowAccountCta(!err.loggedIn);
+        }
         throw new Error(
           err.error || `Error ${res.status}`
         );
@@ -189,6 +209,7 @@ export default function CustomBouquet() {
       // Comprimir: la imagen original de Gemini pesa 1–2 MB y saturaría el carrito
       setPreviewImage(await compressImageDataUrl(data.image));
       setPreviewConfigKey(requestKey);
+      if (typeof data.remaining === "number") setPreviewRemaining(data.remaining);
     } catch (err) {
       console.error("Preview generation failed:", err);
       setPreviewError(
@@ -214,28 +235,23 @@ export default function CustomBouquet() {
     markStepAndAdvance(2);
   };
 
-  const handlePresetSelect = (presetId: string) => {
-    setSelectedPreset(presetId);
-    const preset = COLOR_PRESETS.find((p) => p.id === presetId);
-    if (preset && preset.id !== "sorpresa") {
-      // Sincronizar colores sugeridos
-      if (presetId === "romantico") setSelectedColors(["Rosa Pastel", "Blanco"]);
-      else if (presetId === "calido") setSelectedColors(["Durazno", "Amarillo"]);
-      else if (presetId === "sereno") setSelectedColors(["Blanco", "Follaje Verde"]);
-      else if (presetId === "pasion") setSelectedColors(["Rojo Vino", "Fucsia"]);
-      else if (presetId === "mistico") setSelectedColors(["Lila / Violeta", "Azul"]);
-    }
+  const handleOccasionSelect = (occasionId: OccasionId) => {
+    setSelectedOccasion(occasionId);
     setCompletedSteps((prev) => new Set(prev).add(4));
   };
 
   const toggleColor = (colorName: string) => {
+    const isSelected = selectedColors.includes(colorName);
+    if (!isSelected && selectedColors.length >= MAX_FLOWER_COLORS) {
+      // Límite alcanzado: no se reemplaza ningún color, se avisa al cliente
+      setColorLimitHit(true);
+      return;
+    }
+    setColorLimitHit(false);
     setSelectedColors((prev) => {
-      if (prev.includes(colorName)) {
-        return prev.filter((c) => c !== colorName);
-      }
-      if (prev.length >= 4) {
-        return [...prev.slice(1), colorName];
-      }
+      if (prev.includes(colorName)) return prev.filter((c) => c !== colorName);
+      // Se revisa también aquí por si llegan dos clics seguidos antes de re-renderizar
+      if (prev.length >= MAX_FLOWER_COLORS) return prev;
       return [...prev, colorName];
     });
     // Marcar paso 4 como completado (sin avanzar al siguiente)
@@ -251,11 +267,13 @@ export default function CustomBouquet() {
   const colorSummary =
     selectedColors.length > 0
       ? selectedColors.join(", ")
-      : COLOR_PRESETS.find((p) => p.id === selectedPreset)?.label || "A elección";
+      : "Colores a elección de la florista";
 
   const handleAddToCart = () => {
     const customId = `custom-${category}-${size}-${price}-${Date.now()}`;
-    const customName = `Ramo Personalizado · ${categoryConfig.name} (${size} · ${sizeConfig.dimensions}) [${colorSummary}]${referenceImage ? " 📸 (Con referencia)" : ""
+    const notes = customNotes.trim();
+    // La ocasión y las notas viajan en el nombre del producto para que la florista las vea en el pedido
+    const customName = `Ramo Personalizado · ${categoryConfig.name} (${size} · ${sizeConfig.dimensions}) [${colorSummary}] · Ocasión: ${occasionLabel}${notes ? ` · Notas: ${notes}` : ""}${referenceImage ? " 📸 (Con referencia)" : ""
       }`;
 
     addItem({
@@ -637,60 +655,80 @@ export default function CustomBouquet() {
                         }`}>
                         {completedSteps.has(4) ? "✓" : "4"}
                       </span>
-                      Escoge tus colores
-                    </span>
-                    <span className="text-[11px] text-[#6B6560]">
-                      Seleccionados: <strong>{selectedColors.length}</strong>
+                      Ocasión y colores
                     </span>
                   </div>
 
-                  {/* Paletas temáticas sugeridas */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {COLOR_PRESETS.map((preset) => {
-                      const isSelected = selectedPreset === preset.id;
-                      return (
-                        <button
-                          key={preset.id}
-                          type="button"
-                          onClick={() => handlePresetSelect(preset.id)}
-                          className={`p-2.5 rounded-lg border text-left transition-all ${isSelected
-                              ? "border-black bg-[#FAF3EC] ring-1 ring-black"
-                              : "border-[#E8CEAD] bg-white hover:border-black/50"
-                            }`}
-                        >
-                          <div className="flex items-center gap-1.5 mb-1">
-                            {preset.dots.map((dot, idx) => (
-                              <span
-                                key={idx}
-                                className="w-3 h-3 rounded-full border border-black/20"
-                                style={{ backgroundColor: dot }}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-xs font-medium text-black block leading-tight">
-                            {preset.label}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Selector de colores individuales */}
+                  {/* Ocasión del ramo */}
                   <div>
                     <label className="block text-[11px] text-[#6B6560] uppercase mb-2">
-                      O elige los tonos individuales que deseas incluir:
+                      ¿Para qué ocasión es?
                     </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2" role="radiogroup" aria-label="Ocasión del ramo">
+                      {OCCASIONS.map((occasion) => {
+                        const isSelected = selectedOccasion === occasion.id;
+                        return (
+                          <button
+                            key={occasion.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={isSelected}
+                            onClick={() => handleOccasionSelect(occasion.id)}
+                            className={`p-2.5 rounded-lg border text-left transition-all flex items-center gap-2 ${isSelected
+                                ? "border-black bg-[#FAF3EC] ring-1 ring-black"
+                                : "border-[#E8CEAD] bg-white hover:border-black/50"
+                              }`}
+                          >
+                            <span className="text-sm text-[#B8924A] w-4 text-center shrink-0" aria-hidden="true">
+                              {occasion.icon}
+                            </span>
+                            <span className="text-xs font-medium text-black leading-tight">
+                              {occasion.label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {selectedOccasion === "otro" && (
+                      <input
+                        type="text"
+                        placeholder="Escribe la ocasión. Ej. Día de la madre, bienvenida, graduación..."
+                        value={otherOccasion}
+                        onChange={(e) => setOtherOccasion(e.target.value)}
+                        maxLength={OTHER_OCCASION_MAX_LENGTH}
+                        aria-label="Escribe la ocasión"
+                        autoFocus
+                        className="mt-2 w-full text-xs px-3 py-2 border border-[#E8CEAD] focus:outline-none focus:border-black bg-white placeholder:text-[#6B6560]/60"
+                      />
+                    )}
+                  </div>
+
+                  {/* Selector de colores (máximo MAX_FLOWER_COLORS) */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-[11px] text-[#6B6560] uppercase">
+                        Colores de las flores (máx. {MAX_FLOWER_COLORS})
+                      </label>
+                      <span className="text-[11px] text-[#6B6560]">
+                        <strong>{selectedColors.length}</strong>/{MAX_FLOWER_COLORS}
+                      </span>
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       {INDIVIDUAL_COLORS.map((col) => {
                         const isSelected = selectedColors.includes(col.name);
+                        const isDisabled = !isSelected && selectedColors.length >= MAX_FLOWER_COLORS;
                         return (
                           <button
                             key={col.name}
                             type="button"
+                            aria-pressed={isSelected}
+                            aria-disabled={isDisabled}
                             onClick={() => toggleColor(col.name)}
                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all border ${isSelected
                                 ? "bg-black text-white border-black shadow-sm"
-                                : "bg-white text-black border-[#E8CEAD] hover:border-black/50"
+                                : isDisabled
+                                  ? "bg-white text-black/40 border-[#E8CEAD]/60 cursor-not-allowed"
+                                  : "bg-white text-black border-[#E8CEAD] hover:border-black/50"
                               }`}
                           >
                             <span
@@ -704,6 +742,11 @@ export default function CustomBouquet() {
                         );
                       })}
                     </div>
+                    {colorLimitHit && selectedColors.length >= MAX_FLOWER_COLORS && (
+                      <p className="mt-2 text-[11px] text-[#B8924A]" role="status">
+                        Puedes elegir hasta {MAX_FLOWER_COLORS} colores. Quita uno para cambiarlo.
+                      </p>
+                    )}
                   </div>
 
                   {/* Notas personalizadas */}
@@ -840,10 +883,10 @@ export default function CustomBouquet() {
                     </span>
                     <div className="min-w-0">
                       <span className="text-[10px] uppercase tracking-wider text-[#6B6560] block font-medium">
-                        Paso 4 · Paleta de color & detalles
+                        Paso 4 · Ocasión, colores & detalles
                       </span>
                       <span className="text-sm font-medium text-black truncate block">
-                        {colorSummary}{" "}
+                        {occasionLabel} · {colorSummary}{" "}
                         {referenceImage && (
                           <span className="text-[#4A6B53] text-xs font-normal">
                             · 📸 Foto adjunta
@@ -866,7 +909,7 @@ export default function CustomBouquet() {
                       4
                     </span>
                     <span className="text-xs uppercase font-medium tracking-wider text-black">
-                      Escoge tus colores
+                      Ocasión y colores
                     </span>
                   </div>
                   <span className="text-[11px] text-[#B8924A] font-medium flex items-center gap-1">
@@ -1013,7 +1056,13 @@ export default function CustomBouquet() {
                     </div>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#6B6560]">Paleta de color:</span>
+                    <span className="text-[#6B6560]">Ocasión:</span>
+                    <span className="font-medium text-black text-right max-w-[180px] truncate">
+                      {occasionLabel}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#6B6560]">Colores:</span>
                     <span className="font-medium text-black text-right max-w-[180px] truncate">
                       {colorSummary}
                     </span>
@@ -1096,7 +1145,23 @@ export default function CustomBouquet() {
                           Agrega tu clave en el archivo <code className="bg-red-100 px-1 py-0.5 rounded font-mono">.env.local</code> (GEMINI_API_KEY=tu_clave) y reinicia el servidor.
                         </p>
                       )}
+                      {showAccountCta && (
+                        <Link
+                          href="/cuenta/ingresar?next=/%23personalizar"
+                          className="inline-block mt-1 text-[11px] font-semibold text-black underline underline-offset-2 hover:opacity-70"
+                        >
+                          Crear cuenta o ingresar →
+                        </Link>
+                      )}
                     </div>
+                  )}
+
+                  {previewRemaining !== null && !previewError && (
+                    <p className="text-[11px] text-[#6B6560] text-center">
+                      {previewRemaining > 0
+                        ? `Te ${previewRemaining === 1 ? "queda 1 vista previa" : `quedan ${previewRemaining} vistas previas`} hoy.`
+                        : "Usaste todas tus vistas previas de hoy."}
+                    </p>
                   )}
 
                   {previewImage && (

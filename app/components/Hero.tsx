@@ -8,8 +8,8 @@ export default function Hero() {
           </p>
 
           <h1 className="text-5xl font-light leading-[1.08] tracking-tight text-black sm:text-6xl lg:text-7xl">
-            Flores que
-            <span className="block font-serif italic">dicen más.</span>
+            Experiencias
+            <span className="block font-serif italic">Con Flores</span>
           </h1>
 
           <p className="mt-7 max-w-md text-base leading-7 text-black/70 sm:text-lg">
