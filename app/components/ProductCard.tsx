@@ -61,6 +61,7 @@ export default function ProductCard({
 }: ProductCardProps) {
   const { addItem } = useCart();
   const [isAdded, setIsAdded] = useState(false);
+  const [showFullDescription, setShowFullDescription] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
@@ -314,12 +315,24 @@ export default function ProductCard({
         </div>
 
         {description && (
-          <p
-            className="line-clamp-2 sm:line-clamp-none text-[11px] sm:text-xs font-light leading-snug sm:leading-relaxed mb-1 sm:mb-3"
-            style={{ color: "#6B6560" }}
+          <button
+            type="button"
+            onClick={() => setShowFullDescription((v) => !v)}
+            aria-expanded={showFullDescription}
+            className="block w-full text-left mb-1 sm:mb-3 sm:pointer-events-none sm:cursor-default"
           >
-            {description}
-          </p>
+            <span
+              className={`text-[11px] sm:text-xs font-light leading-snug sm:leading-relaxed sm:block sm:line-clamp-none ${
+                showFullDescription ? "block" : "line-clamp-2"
+              }`}
+              style={{ color: "#6B6560" }}
+            >
+              {description}
+            </span>
+            <span className="sm:hidden mt-1 block text-[10px] font-medium text-black underline underline-offset-2">
+              {showFullDescription ? "Ver menos" : "Ver más"}
+            </span>
+          </button>
         )}
       </div>
 
