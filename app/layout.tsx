@@ -25,6 +25,7 @@ const businessJsonLd = {
     addressCountry: "PE",
   },
   geo: { "@type": "GeoCoordinates", latitude: -12.12034, longitude: -77.013524 },
+  hasMap: "https://www.google.com/maps?cid=8847489344039001947",
   openingHoursSpecification: [
     {
       "@type": "OpeningHoursSpecification",

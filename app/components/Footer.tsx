@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import { WHATSAPP_NUMBER, WHATSAPP_DISPLAY } from "../lib/constants";
 
 // Ubicación de la tienda: Av. Roca y Boloña 825, Lima 15048
+// Ficha "La Obra Experiencias con Flores" en Google Maps
 const MAPS_EMBED_URL =
-  "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d289.934664334057!2d-77.01352405725449!3d-12.120340445787644!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9105c8064cce3d11%3A0xf14ad5c68ef32bcc!2sAv%20Roca%20y%20Bolo%C3%B1a%20825%2C%20Lima%2015048!5e0!3m2!1ses-419!2spe!4v1795622488174!5m2!1ses-419!2spe";
-const MAPS_LINK =
-  "https://www.google.com/maps/search/?api=1&query=Av%20Roca%20y%20Bolo%C3%B1a%20825%2C%20Lima%2015048";
+  "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d7801.7661897049875!2d-77.02022635626224!3d-12.12015054617282!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9105c99d064c03ff%3A0x7ac898aeb17f9f5b!2sLa%20Obra%20Experiencias%20con%20Flores!5e0!3m2!1ses-419!2spe!4v1795819718911!5m2!1ses-419!2spe";
+const MAPS_LINK = "https://www.google.com/maps?cid=8847489344039001947";
 
 export default function Footer() {
   const [currentYear, setCurrentYear] = useState(2026);
