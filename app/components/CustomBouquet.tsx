@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "../context/CartContext";
 import { FREE_DELIVERY_THRESHOLD } from "../lib/delivery";
+import { ACCOUNTS_VISIBLE } from "../lib/constants";
 import {
   BOUQUET_CONFIGS,
   OCCASIONS,
@@ -198,7 +199,7 @@ export default function CustomBouquet() {
         const err = await res.json().catch(() => ({}));
         if (err.code === "quota") {
           setPreviewRemaining(0);
-          setShowAccountCta(!err.loggedIn);
+          setShowAccountCta(ACCOUNTS_VISIBLE && !err.loggedIn);
         }
         throw new Error(
           err.error || `Error ${res.status}`

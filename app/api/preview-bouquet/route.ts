@@ -13,6 +13,7 @@ import {
 } from "../../lib/bouquet";
 import { createClient as createSessionClient } from "../../lib/supabaseServer";
 import { getSupabaseAdmin } from "../../lib/supabaseAdmin";
+import { ACCOUNTS_VISIBLE } from "../../lib/constants";
 
 /**
  * POST /api/preview-bouquet
@@ -261,7 +262,9 @@ export async function POST(request: Request) {
       {
         error: userId
           ? `Ya generaste tus ${quotaLimit} vistas previas de hoy. Vuelve mañana para crear más.`
-          : "Ya usaste tu vista previa gratuita de hoy. Crea tu cuenta gratis para generar hasta 5 al día.",
+          : ACCOUNTS_VISIBLE
+            ? "Ya usaste tu vista previa gratuita de hoy. Crea tu cuenta gratis para generar hasta 5 al día."
+            : "Ya usaste tu vista previa gratuita de hoy. Vuelve mañana para generar otra.",
         code: "quota",
         loggedIn: Boolean(userId),
         remaining: 0,

@@ -3,13 +3,11 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useCart } from "../context/CartContext";
-import { WHATSAPP_NUMBER } from "../lib/constants";
+import { ACCOUNTS_VISIBLE, WHATSAPP_NUMBER } from "../lib/constants";
 import { getCustomerName, useCustomer } from "../lib/useCustomer";
 
 const COUPON_CODE = 'LAOBRA01';
 
-// Cuentas de clientes: cambiar a false para ocultar "Ingresar".
-const SHOW_ACCOUNT_LINK = true;
 
 const navLinks = [
   { href: "#inicio", label: "Inicio" },
@@ -196,8 +194,8 @@ export default function Header() {
 
           {/* Right CTA Actions: Cart & WhatsApp */}
           <div className="flex items-center gap-3 sm:gap-4">
-            {/* Cuenta del cliente (ver SHOW_ACCOUNT_LINK) */}
-            {SHOW_ACCOUNT_LINK && (
+            {/* Cuenta del cliente (ver ACCOUNTS_VISIBLE en lib/constants) */}
+            {ACCOUNTS_VISIBLE && (
             <Link
               href={accountHref}
               className={`flex items-center gap-2 p-2.5 sm:px-3 sm:py-2 text-xs tracking-widest uppercase text-black hover:opacity-60 transition-opacity ${
