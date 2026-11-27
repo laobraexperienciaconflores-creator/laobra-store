@@ -4,6 +4,8 @@ import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { WHATSAPP_NUMBER } from "../../lib/constants";
+import type { TrackingFields } from "../../lib/tracking";
+import OrderTracking from "./OrderTracking";
 
 export interface OrderItem {
   id: string;
@@ -21,7 +23,7 @@ export interface OrderItem {
   itemsSubtotal?: number;
 }
 
-export interface OrderData {
+export interface OrderData extends TrackingFields {
   id?: string;
   order_number: string;
   status: string;
@@ -433,6 +435,9 @@ export default function OrderReceiptPage({
 
         {/* Contenido de la Boleta */}
         <div className="p-8 space-y-8 text-xs text-black">
+          {/* 0. Seguimiento del pedido (lo actualiza el admin) */}
+          <OrderTracking order={order} />
+
           {/* 1. Detalle de los artículos */}
           <div>
             <h3 className="text-[11px] uppercase tracking-widest text-[#6B6560] font-semibold mb-4 border-b pb-2 border-[#F3E2CE]">

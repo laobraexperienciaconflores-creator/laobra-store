@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { createClient } from "../../lib/supabaseServer";
 import { getSupabaseAdmin } from "../../lib/supabaseAdmin";
 import PaymentActions from "./paymentActions";
+import TrackingActions from "./trackingActions";
 
 export default function AdminPage() {
     return (
@@ -116,7 +117,7 @@ async function OrdersContent() {
             </section>
 
             <section className="overflow-x-auto rounded-xl border border-white/10">
-                <table className="w-full min-w-[1100px] text-left text-sm">
+                <table className="w-full min-w-[1320px] text-left text-sm">
                     <thead className="bg-neutral-900 text-neutral-300">
                         <tr>
                             <th className="p-4">Pedido</th>
@@ -125,6 +126,7 @@ async function OrdersContent() {
                             <th className="p-4">Método</th>
                             <th className="p-4">Boleta</th>
                             <th className="p-4">Pago y acciones</th>
+                            <th className="p-4">Seguimiento</th>
                             <th className="p-4">Estado del pedido</th>
                         </tr>
                     </thead>
@@ -188,6 +190,18 @@ async function OrdersContent() {
                                     </td>
 
                                     <td className="p-4">
+                                        <TrackingActions
+                                            orderId={order.id}
+                                            initialTracking={{
+                                                tracking_status: order.tracking_status,
+                                                tracking_received_at: order.tracking_received_at,
+                                                tracking_preparing_at: order.tracking_preparing_at,
+                                                tracking_on_the_way_at: order.tracking_on_the_way_at,
+                                            }}
+                                        />
+                                    </td>
+
+                                    <td className="p-4">
                                         {order.status ?? "pendiente"}
                                     </td>
                                 </tr>
@@ -197,7 +211,7 @@ async function OrdersContent() {
                         {orders?.length === 0 && (
                             <tr>
                                 <td
-                                    colSpan={7}
+                                    colSpan={8}
                                     className="p-6 text-center text-neutral-400"
                                 >
                                     Todavía no hay pedidos.

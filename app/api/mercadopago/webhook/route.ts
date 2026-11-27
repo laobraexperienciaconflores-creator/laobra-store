@@ -49,7 +49,6 @@ export async function POST(request: Request) {
 
     const mpStatus = payment.status; // approved | rejected | pending | in_process
     const externalRef = payment.external_reference; // nuestro order_number
-    const paymentMethod = payment.payment_method_id || "mercadopago";
 
 
     if (!externalRef) {
@@ -88,6 +87,23 @@ export async function POST(request: Request) {
     ) {
       const supabase = createClient(supabaseUrl, supabaseKey);
 
+      // Un pago aprobado solo confirma el pedido si cubre el total guardado
+      if (mpStatus === "approved") {
+        const { data: order } = await supabase
+          .from("orders")
+          .select("total_amount")
+          .eq("order_number", externalRef)
+          .maybeSingle();
+        const expected = Number(order?.total_amount);
+        const paid = Number(payment.transaction_amount);
+        if (!order || !Number.isFinite(paid) || paid + 0.01 < expected) {
+          console.error(
+            `[MP Webhook] Monto no coincide para ${externalRef}: pagado ${paid}, esperado ${expected}`
+          );
+          return NextResponse.json({ received: true, skipped: "amount_mismatch" });
+        }
+      }
+
       const { error } = await supabase
         .from("orders")
         .update({
@@ -100,14 +116,16 @@ export async function POST(request: Request) {
       if (error) {
         console.error("[MP Webhook] Error actualizando Supabase:", error.message);
         // Devolvemos 200 igual para que MP no reintente infinitamente
-      } else {
       }
     }
 
     // Siempre responder 200 a MP (si respondemos 4xx/5xx, MP reintenta)
     return NextResponse.json({ received: true, status: newPaymentStatus });
-  } catch (error: any) {
-    console.error("[MP Webhook] Error inesperado:", error?.message);
+  } catch (error: unknown) {
+    console.error(
+      "[MP Webhook] Error inesperado:",
+      error instanceof Error ? error.message : error
+    );
     // Respondemos 200 para evitar reintentos de MP
     return NextResponse.json({ received: true, error: "handled" });
   }

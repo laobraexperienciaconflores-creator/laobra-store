@@ -408,8 +408,14 @@ export default function CartDrawer() {
         }),
       });
       const orderData = await orderRes.json();
-      const orderNumber = orderData?.orderNumber || "LAOBRA-0001";
+      const orderNumber = orderData?.orderNumber || "";
       const publicToken = orderData?.publicToken || "";
+
+      if (!orderRes.ok || !orderNumber || !publicToken) {
+        setMpError(orderData?.error || "No se pudo registrar tu pedido. Intenta de nuevo.");
+        setIsSubmitting(false);
+        return;
+      }
 
       // Guardar el token privado en localStorage antes de redirigir a MercadoPago
       if (publicToken && orderNumber) {
@@ -423,21 +429,14 @@ export default function CartDrawer() {
       const mpRes = await fetch("/api/mercadopago/create-preference", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items,
-          orderNumber,
-          publicToken: orderData?.publicToken || "",
-          buyerName: orderDetails.buyerName.trim(),
-          buyerEmail: "cliente@laobra.pe",
-          orderDetails,
-        }),
+        body: JSON.stringify({ orderNumber, publicToken }),
       });
       const mpData = await mpRes.json();
 
       if (!mpData?.success) {
         setMpError(
           mpData?.error ||
-          "No se pudo iniciar Mercado Pago. Verifica las credenciales en .env.local."
+          "No se pudo iniciar Mercado Pago. Intenta de nuevo o paga con Yape o Plin."
         );
         setIsSubmitting(false);
         return;
@@ -467,7 +466,7 @@ export default function CartDrawer() {
         setMpError("No se obtuvo URL de pago de Mercado Pago.");
         setIsSubmitting(false);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error en checkout Mercado Pago:", err);
       setMpError(
         "Hubo un error al conectar con Mercado Pago. Por favor intenta con Yape/Plin."
@@ -1236,7 +1235,7 @@ export default function CartDrawer() {
                   </div>
                 )}
 
-                {/* Sub-bloque 2: Mercado Pago 
+                {/* Sub-bloque 2: Mercado Pago */}
                 {paymentMethod === "mercadopago" && (
                   <div className="p-4 bg-[#FDF8F3] border border-[#F3E2CE] space-y-4">
                     <div className="flex items-center justify-between">
@@ -1260,38 +1259,6 @@ export default function CartDrawer() {
                     <div className="p-3 bg-white border border-[#E8CEAD] flex items-center justify-between">
                       <span className="text-xs text-[#6B6560]">Monto total a procesar:</span>
                       <span className="text-sm font-semibold text-black">{formattedTotal}</span>
-                    </div>
-                  </div>
-                )}*/}
-
-                {/* Sub-bloque 2: Mercado Pago - Próximamente */}
-                {paymentMethod === "mercadopago" && (
-                  <div className="p-4 bg-[#FDF8F3] border border-[#F3E2CE] space-y-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-black">
-                        Pago con tarjetas
-                      </span>
-
-                      <span className="text-[10px] font-semibold px-2 py-1 bg-[#EDE5DA] text-[#6B6560] rounded">
-                        PRÓXIMAMENTE
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-[#6B6560] leading-relaxed">
-                      Estamos preparando los pagos en línea con Mercado Pago para que
-                      puedas comprar tus flores de forma fácil y segura.
-                    </p>
-
-                    <div className="flex items-center gap-2 py-2 border-y border-[#F3E2CE] text-[11px] text-[#6B6560]">
-                      <span className="font-semibold text-black">Muy pronto:</span>
-                      <span>Visa · Mastercard · Débito y crédito</span>
-                    </div>
-
-                    <div className="p-3 bg-white border border-[#E8CEAD] flex items-center gap-2">
-                      <span className="text-[#8A7560]">ⓘ</span>
-                      <span className="text-xs text-[#6B6560]">
-                        Por ahora, puedes pagar mediante Yape o Plin.
-                      </span>
                     </div>
                   </div>
                 )}
@@ -1463,7 +1430,7 @@ export default function CartDrawer() {
                   )}
                 </button>
               ) : (
-                /*<button
+                <button
                   onClick={handleCheckoutMercadoPago}
                   disabled={isSubmitting}
                   className="w-full py-4 text-xs uppercase tracking-[0.2em] font-medium bg-[#000000] text-white flex items-center justify-center gap-3 transition-all hover:bg-black/85 active:scale-[0.99] shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
@@ -1492,34 +1459,7 @@ export default function CartDrawer() {
                       <span>Pagar con Mercado Pago</span>
                     </>
                   )}
-                </button>*/
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPaymentMethod("yape_plin");
-                    setIsSubmitting(false);
-                    setValidationError(null);
-                  }}
-                  className="w-full py-4 text-xs uppercase tracking-[0.2em] font-medium bg-[#000000] text-white flex items-center justify-center gap-3 transition-all hover:bg-black/85 active:scale-[0.99] shadow-md"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                    <line x1="1" y1="10" x2="23" y2="10" />
-                  </svg>
-                  <span>Elegir otro método de pago</span>
                 </button>
-
               )}
 
               <div className="flex items-center justify-between text-[11px] text-[#6B6560]">
