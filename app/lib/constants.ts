@@ -7,7 +7,7 @@ export const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "51988
 export const WHATSAPP_DISPLAY = "+51 988 559 304";
 
 /**
- * Cuentas de clientes ("Ingresar"): ocultas hasta tener dominio propio. Cambiar a true para mostrar
+ * Cuentas de clientes ("Ingresar"). Cambiar a false para ocultar
  * el acceso en el encabezado y la invitación a crear cuenta al agotar la vista previa IA.
  */
-export const ACCOUNTS_VISIBLE = false;
+export const ACCOUNTS_VISIBLE = true;

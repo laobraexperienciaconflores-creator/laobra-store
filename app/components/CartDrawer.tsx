@@ -378,7 +378,7 @@ export default function CartDrawer() {
     const invoiceUrl = `${baseUrl}/orders/${generatedPublicToken}`;
 
     message += `🧾 *Ver compra:* ${invoiceUrl}\n\n`;
-    message += `Enviado desde www.laobra.pe`;
+    message += `Enviado desde laobra.pe`;
 
     const encoded = encodeURIComponent(message);
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`, "_blank", "noopener,noreferrer");

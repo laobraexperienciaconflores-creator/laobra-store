@@ -7,7 +7,7 @@ import AccountSync from "./components/AccountSync";
 import { WHATSAPP_DISPLAY } from "./lib/constants";
 
 // Ficha del negocio para Google (búsqueda y Maps). Debe coincidir con el Perfil de Empresa de Google.
-const SITE_URL = "https://laobra-store.vercel.app";
+const SITE_URL = "https://laobra.pe";
 const businessJsonLd = {
   "@context": "https://schema.org",
   "@type": "Florist",
@@ -37,6 +37,7 @@ const businessJsonLd = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "LA OBRA | Experiencias con flores",
   description:
     "Descubre arreglos florales artesanales en Lima. Regala flores, expresa tus sentimientos y crea un ramo personalizado con LA OBRA.",
