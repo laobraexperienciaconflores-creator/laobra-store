@@ -4,8 +4,10 @@
  * Ej: "admin1@gmail.com, admin2@gmail.com"
  */
 export function getAdminEmails(): string[] {
-    const rawServer = typeof process !== "undefined" ? process.env.ADMIN_EMAIL || "" : "";
-    const rawClient = typeof process !== "undefined" ? process.env.NEXT_PUBLIC_ADMIN_EMAIL || "" : "";
+    // En el navegador no existe "process": Next.js reemplaza NEXT_PUBLIC_ADMIN_EMAIL por su valor
+    // al compilar, y ADMIN_EMAIL (privada) solo se lee en el servidor.
+    const rawServer = typeof window === "undefined" ? process.env.ADMIN_EMAIL || "" : "";
+    const rawClient = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "";
     const combined = `${rawServer},${rawClient}`;
 
     const uniqueEmails = new Set(

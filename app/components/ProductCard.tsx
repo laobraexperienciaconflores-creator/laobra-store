@@ -315,7 +315,7 @@ export default function ProductCard({
 
         {description && (
           <p
-            className="hidden sm:block text-xs font-light leading-relaxed mb-3"
+            className="line-clamp-2 sm:line-clamp-none text-[11px] sm:text-xs font-light leading-snug sm:leading-relaxed mb-1 sm:mb-3"
             style={{ color: "#6B6560" }}
           >
             {description}

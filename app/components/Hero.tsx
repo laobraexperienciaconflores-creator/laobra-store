@@ -1,10 +1,10 @@
 export default function Hero() {
   return (
     <section className="relative overflow-hidden bg-[#F3E2CE]">
-      <div className="mx-auto grid min-h-[620px] max-w-7xl items-center gap-10 px-6 pt-32 pb-16 md:px-12 lg:px-20">
+      <div className="mx-auto grid min-h-[620px] max-w-7xl items-center gap-10 px-6 pt-48 pb-16 sm:pt-32 md:px-12 lg:px-20">
         <div className="relative z-10 max-w-xl">
           <p className="mb-6 text-xs font-semibold uppercase tracking-[0.3em] text-black/60">
-            LA OBRA · El arte de regalar
+            La Obra crea arte con flores
           </p>
 
           <h1 className="text-5xl font-light leading-[1.08] tracking-tight text-black sm:text-6xl lg:text-7xl">

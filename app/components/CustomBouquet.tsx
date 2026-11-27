@@ -2,7 +2,7 @@
 
 import { useState, useId, useRef, useCallback } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import AiPreviewStudio from "./AiPreviewStudio";
 import { useCart } from "../context/CartContext";
 import { FREE_DELIVERY_THRESHOLD } from "../lib/delivery";
 import { ACCOUNTS_VISIBLE } from "../lib/constants";
@@ -1106,143 +1106,22 @@ export default function CustomBouquet() {
                 </div>
 
                 {/* ═══ Vista previa con IA ═══ */}
-                <div className="space-y-2.5">
-                  <button
-                    type="button"
-                    onClick={handleGeneratePreview}
-                    disabled={isGeneratingPreview}
-                    className="group w-full relative overflow-hidden rounded-xl border border-[#B8924A]/60 bg-gradient-to-r from-[#FDF8F3] to-[#FAF3EC] px-4 py-3 text-xs font-medium uppercase tracking-[0.12em] text-[#B8924A] transition-all hover:border-[#B8924A] hover:shadow-md active:scale-[0.99] disabled:opacity-70 disabled:cursor-wait flex items-center justify-center gap-2.5"
-                  >
-                    {isGeneratingPreview ? (
-                      <>
-                        <span className="w-4 h-4 border-2 border-[#B8924A]/30 border-t-[#B8924A] rounded-full animate-spin" />
-                        <span>Creando tu vista previa con IA…</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          className="text-[#B8924A]"
-                        >
-                          <path
-                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                        <span>✨ Generar vista previa con IA</span>
-                      </>
-                    )}
-                    <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-[#B8924A]/10 to-transparent group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-                  </button>
-
-                  {previewError && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 leading-relaxed space-y-1">
-                      <p className="font-medium">⚠️ {previewError}</p>
-                      {previewError.includes("GEMINI_API_KEY") && (
-                        <p className="text-[11px] text-red-600">
-                          Agrega tu clave en el archivo <code className="bg-red-100 px-1 py-0.5 rounded font-mono">.env.local</code> (GEMINI_API_KEY=tu_clave) y reinicia el servidor.
-                        </p>
-                      )}
-                      {showAccountCta && (
-                        <Link
-                          href="/cuenta/ingresar?next=/%23personalizar"
-                          className="inline-block mt-1 text-[11px] font-semibold text-black underline underline-offset-2 hover:opacity-70"
-                        >
-                          Crear cuenta o ingresar →
-                        </Link>
-                      )}
-                    </div>
-                  )}
-
-                  {previewRemaining !== null && !previewError && (
-                    <p className="text-[11px] text-[#6B6560] text-center">
-                      {previewRemaining > 0
-                        ? `Te ${previewRemaining === 1 ? "queda 1 vista previa" : `quedan ${previewRemaining} vistas previas`} hoy.`
-                        : "Usaste todas tus vistas previas de hoy."}
-                    </p>
-                  )}
-
-                  {previewImage && (
-                    <div className="relative rounded-xl overflow-hidden border border-[#E8CEAD] shadow-md bg-white">
-                      <div className="relative aspect-[3/4] w-full bg-[#FAF3EC] overflow-hidden flex items-center justify-center">
-                        <img
-                          src={previewImage}
-                          alt="Vista previa generada con IA de tu ramo personalizado"
-                          className="w-full h-full object-contain"
-                        />
-                      </div>
-                      <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 pointer-events-none">
-                        <span className="px-2.5 py-1 bg-[#B8924A]/90 backdrop-blur-md text-white text-[9px] uppercase tracking-widest font-semibold rounded-full shadow-md">
-                          ✨ Preview IA
-                        </span>
-                      </div>
-                      <div className="p-3 bg-[#FDF8F3] border-t border-[#E8CEAD]/60 space-y-2">
-                        {isPreviewStale && (
-                          <p className="text-[11px] text-[#8A5A00] bg-[#FFF4D6] border border-[#F0D58A] rounded-md px-2 py-1.5 text-center">
-                            Cambiaste tu selección después de generar esta imagen. Pulsa ↻ para actualizarla.
-                          </p>
-                        )}
-                        <p className="text-[10px] text-[#6B6560] leading-relaxed text-center">
-                          Imagen referencial generada por IA según tus selecciones · El ramo real será confeccionado artesanalmente por nuestras floristas.
-                        </p>
-                        {!isPreviewStale && (
-                          <p className="text-[11px] text-[#4A6B53] font-medium text-center">
-                            ✓ Esta imagen se agregará a tu carrito y a tu compra
-                          </p>
-                        )}
-                      </div>
-                      <div className="absolute top-2.5 right-2.5 flex gap-1.5">
-                        <button
-                          type="button"
-                          onClick={handleGeneratePreview}
-                          disabled={isGeneratingPreview}
-                          className="w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm text-[#6B6560] hover:text-black flex items-center justify-center shadow-sm transition-colors disabled:opacity-50"
-                          title="Regenerar otra versión"
-                        >
-                          <svg
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <polyline points="23 4 23 10 17 10" />
-                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-                          </svg>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPreviewImage(null)}
-                          className="w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm text-[#6B6560] hover:text-black flex items-center justify-center shadow-sm transition-colors"
-                          title="Cerrar vista previa"
-                        >
-                          <svg
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <line x1="18" y1="6" x2="6" y2="18" />
-                            <line x1="6" y1="6" x2="18" y2="18" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <AiPreviewStudio
+                  previewImage={previewImage}
+                  isGenerating={isGeneratingPreview}
+                  error={previewError}
+                  remaining={previewRemaining}
+                  isStale={isPreviewStale}
+                  showAccountCta={showAccountCta}
+                  occasionLabel={occasionLabel}
+                  categoryName={categoryConfig.name}
+                  sizeLabel={`${size} · ${sizeConfig.dimensions}`}
+                  colors={selectedColors
+                    .map((name) => INDIVIDUAL_COLORS.find((c) => c.name === name))
+                    .filter((c): c is (typeof INDIVIDUAL_COLORS)[number] => Boolean(c))}
+                  onGenerate={handleGeneratePreview}
+                  onClear={() => setPreviewImage(null)}
+                />
 
                 {/* Botón 1: Agregar al Carrito */}
                 <button
