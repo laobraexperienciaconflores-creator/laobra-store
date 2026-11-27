@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { connection } from "next/server";
 import { createClient } from "../../lib/supabaseServer";
 import { getSupabaseAdmin } from "../../lib/supabaseAdmin";
@@ -81,9 +82,17 @@ async function OrdersContent() {
     return (
         <main className="min-h-screen bg-neutral-950 p-6 text-white md:p-10">
             <header className="mb-8">
-                <p className="text-sm tracking-[0.3em] text-amber-400">
-                    LAOBRA
-                </p>
+                <div className="flex items-center justify-between gap-4">
+                    <p className="text-sm tracking-[0.3em] text-amber-400">
+                        LAOBRA
+                    </p>
+                    <Link
+                        href="/admin/ia"
+                        className="rounded-md border border-white/15 px-4 py-2 text-sm text-neutral-200 hover:border-amber-400 hover:text-amber-300"
+                    >
+                        ✨ Galería IA
+                    </Link>
+                </div>
 
                 <h1 className="mt-2 text-3xl font-semibold">
                     Administración

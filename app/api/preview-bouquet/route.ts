@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -13,6 +13,7 @@ import {
 } from "../../lib/bouquet";
 import { createClient as createSessionClient } from "../../lib/supabaseServer";
 import { getSupabaseAdmin } from "../../lib/supabaseAdmin";
+import { saveAiPreview } from "../../lib/aiPreviews";
 import { ACCOUNTS_VISIBLE } from "../../lib/constants";
 
 /**
@@ -475,6 +476,20 @@ Recuerda: sin personas ni manos. Debe verse como una foto real más del catálog
         if (imagePart?.inlineData?.data) {
           const { mimeType, data: imageBase64 } = imagePart.inlineData;
           await recordUsage(quotaSubject);
+          // Guardar en la galería IA del admin sin hacer esperar al cliente
+          after(() =>
+            saveAiPreview({
+              userId,
+              category,
+              size,
+              colors: safeColors,
+              occasion: occasionLabel,
+              notes: customerNotes,
+              model,
+              base64: imageBase64,
+              mimeType: mimeType || "image/png",
+            })
+          );
           return NextResponse.json({
             image: `data:${mimeType || "image/png"};base64,${imageBase64}`,
             modelUsed: model,
